@@ -1,3 +1,22 @@
+#idea
+.idea
+*.iws
+*.iml
+*.ipr
+
+#eclipse
+.classpath
+.project
+.settings
+.metadata
+
+# Java class files
+*.class
+*.war
+
+# Log Files
+*.log
+
 target/
 pom.xml.tag
 pom.xml.releaseBackup
