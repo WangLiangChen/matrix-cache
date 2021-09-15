@@ -5,7 +5,6 @@
     <groupId>liangchen.wang.matrix</groupId>
     <artifactId>matrix-mcache</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
 
     <developers>
         <developer>
@@ -24,7 +23,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <maven.basedir>${project.basedir}</maven.basedir>
     </properties>
 
     <build>
