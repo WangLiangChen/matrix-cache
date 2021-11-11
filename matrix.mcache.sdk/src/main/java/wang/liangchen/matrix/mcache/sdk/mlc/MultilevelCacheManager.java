@@ -4,10 +4,10 @@ import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import wang.liangchen.matrix.mcache.sdk.redis.CacheMessage;
 import wang.liangchen.matrix.mcache.sdk.override.AbstractCacheManager;
 import wang.liangchen.matrix.mcache.sdk.override.Cache;
 import wang.liangchen.matrix.mcache.sdk.override.CacheManager;
+import wang.liangchen.matrix.mcache.sdk.redis.CacheMessage;
 import wang.liangchen.matrix.mcache.sdk.runner.CacheMessageConsumerRunner;
 
 import javax.annotation.Nullable;

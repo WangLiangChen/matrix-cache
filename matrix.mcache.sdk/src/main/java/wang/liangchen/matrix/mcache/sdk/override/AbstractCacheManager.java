@@ -47,16 +47,16 @@ public abstract class AbstractCacheManager implements CacheManager, Initializing
         }
     }
 
+    protected abstract Collection<? extends Cache> loadCaches();
+
 
     public void setTransactionAware(boolean transactionAware) {
         this.transactionAware = transactionAware;
     }
-
     public boolean isTransactionAware() {
         return this.transactionAware;
     }
 
-    protected abstract Collection<? extends Cache> loadCaches();
 
     @Nullable
     protected final Cache lookupCache(String name) {

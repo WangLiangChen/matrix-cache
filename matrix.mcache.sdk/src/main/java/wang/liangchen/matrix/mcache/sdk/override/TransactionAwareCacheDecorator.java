@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 /**
  * @author LiangChen.Wang 2021/4/20
  */
-public class TransactionAwareCacheDecorator implements Cache {
+public class TransactionAwareCacheDecorator implements wang.liangchen.matrix.mcache.sdk.override.Cache {
     private final Cache targetCache;
 
 
@@ -26,10 +26,8 @@ public class TransactionAwareCacheDecorator implements Cache {
     }
 
 
-    /**
-     * Return the target Cache that this Cache should delegate to.
-     */
     public Cache getTargetCache() {
+        //Return the target Cache that this Cache should delegate to.
         return this.targetCache;
     }
 
@@ -62,6 +60,7 @@ public class TransactionAwareCacheDecorator implements Cache {
 
     @Override
     public void put(final Object key, @Nullable final Object value) {
+        // put cache after transaction committed
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -69,9 +68,9 @@ public class TransactionAwareCacheDecorator implements Cache {
                     TransactionAwareCacheDecorator.this.targetCache.put(key, value);
                 }
             });
-        } else {
-            this.targetCache.put(key, value);
+            return;
         }
+        this.targetCache.put(key, value);
     }
 
     @Override
@@ -89,9 +88,9 @@ public class TransactionAwareCacheDecorator implements Cache {
                     TransactionAwareCacheDecorator.this.targetCache.evict(key);
                 }
             });
-        } else {
-            this.targetCache.evict(key);
+            return;
         }
+        this.targetCache.evict(key);
     }
 
     @Override
@@ -108,9 +107,9 @@ public class TransactionAwareCacheDecorator implements Cache {
                     targetCache.clear();
                 }
             });
-        } else {
-            this.targetCache.clear();
+            return;
         }
+        this.targetCache.clear();
     }
 
     @Override

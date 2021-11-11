@@ -4,7 +4,6 @@ import org.apache.commons.configuration2.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
-import wang.liangchen.matrix.mcache.sdk.enumeration.CacheStatus;
 import wang.liangchen.matrix.framework.commons.exception.AssertUtil;
 import wang.liangchen.matrix.framework.commons.exception.MatrixInfoException;
 import wang.liangchen.matrix.framework.commons.network.NetUtil;
@@ -12,6 +11,7 @@ import wang.liangchen.matrix.framework.commons.utils.PrettyPrinter;
 import wang.liangchen.matrix.framework.commons.utils.StringUtil;
 import wang.liangchen.matrix.framework.springboot.context.ConfigurationContext;
 import wang.liangchen.matrix.mcache.sdk.configuration.RedisAutoConfiguration;
+import wang.liangchen.matrix.mcache.sdk.enumeration.CacheStatus;
 
 import java.lang.annotation.*;
 
