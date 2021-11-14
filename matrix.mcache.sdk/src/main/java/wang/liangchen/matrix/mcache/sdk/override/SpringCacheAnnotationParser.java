@@ -1,14 +1,17 @@
 package wang.liangchen.matrix.mcache.sdk.override;
 
-import org.springframework.cache.annotation.*;
+import org.springframework.cache.annotation.CacheAnnotationParser;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.interceptor.CacheEvictOperation;
 import org.springframework.cache.interceptor.CacheOperation;
-import org.springframework.cache.interceptor.CachePutOperation;
-import org.springframework.cache.interceptor.CacheableOperation;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
+import wang.liangchen.matrix.mcache.sdk.annotation.CachePut;
+import wang.liangchen.matrix.mcache.sdk.annotation.Cacheable;
+import wang.liangchen.matrix.mcache.sdk.annotation.Caching;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -22,18 +25,18 @@ import java.util.Set;
 /**
  * @author LiangChen.Wang 2021/3/18
  */
-@SuppressWarnings("serial")
 public class SpringCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
     private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<>(8);
 
     static {
         CACHE_OPERATION_ANNOTATIONS.add(Cacheable.class);
-        CACHE_OPERATION_ANNOTATIONS.add(wang.liangchen.matrix.mcache.sdk.annotation.Cacheable.class);
+        CACHE_OPERATION_ANNOTATIONS.add(org.springframework.cache.annotation.Cacheable.class);
         CACHE_OPERATION_ANNOTATIONS.add(CacheEvict.class);
         CACHE_OPERATION_ANNOTATIONS.add(CachePut.class);
-        CACHE_OPERATION_ANNOTATIONS.add(wang.liangchen.matrix.mcache.sdk.annotation.CachePut.class);
+        CACHE_OPERATION_ANNOTATIONS.add(org.springframework.cache.annotation.CachePut.class);
         CACHE_OPERATION_ANNOTATIONS.add(Caching.class);
+        CACHE_OPERATION_ANNOTATIONS.add(org.springframework.cache.annotation.Caching.class);
     }
 
 
@@ -70,56 +73,59 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
     }
 
     @Nullable
-    private Collection<CacheOperation> parseCacheAnnotations(DefaultCacheConfig cachingConfig, AnnotatedElement ae, boolean localOnly) {
-        Collection<? extends Annotation> anns = (localOnly ?
-                AnnotatedElementUtils.getAllMergedAnnotations(ae, CACHE_OPERATION_ANNOTATIONS) :
-                AnnotatedElementUtils.findAllMergedAnnotations(ae, CACHE_OPERATION_ANNOTATIONS));
-        if (anns.isEmpty()) {
+    private Collection<CacheOperation> parseCacheAnnotations(DefaultCacheConfig cachingConfig, AnnotatedElement annotatedElement, boolean localOnly) {
+        Collection<? extends Annotation> annotations = (localOnly ?
+                AnnotatedElementUtils.getAllMergedAnnotations(annotatedElement, CACHE_OPERATION_ANNOTATIONS) :
+                AnnotatedElementUtils.findAllMergedAnnotations(annotatedElement, CACHE_OPERATION_ANNOTATIONS));
+        if (annotations.isEmpty()) {
             return null;
         }
 
-        final Collection<CacheOperation> ops = new ArrayList<>(1);
-        anns.stream().filter(ann -> ann instanceof Cacheable).forEach(
-                ann -> ops.add(parseCacheableAnnotation(ae, cachingConfig, ann)));
-        anns.stream().filter(ann -> ann instanceof wang.liangchen.matrix.mcache.sdk.annotation.Cacheable).forEach(
-                ann -> ops.add(parseCacheableAnnotation(ae, cachingConfig, ann)));
-        anns.stream().filter(ann -> ann instanceof CacheEvict).forEach(
-                ann -> ops.add(parseEvictAnnotation(ae, cachingConfig, (CacheEvict) ann)));
-        anns.stream().filter(ann -> ann instanceof CachePut).forEach(
-                ann -> ops.add(parsePutAnnotation(ae, cachingConfig, ann)));
-        anns.stream().filter(ann -> ann instanceof wang.liangchen.matrix.mcache.sdk.annotation.CachePut).forEach(
-                ann -> ops.add(parsePutAnnotation(ae, cachingConfig, ann)));
-        anns.stream().filter(ann -> ann instanceof Caching).forEach(
-                ann -> parseCachingAnnotation(ae, cachingConfig, (Caching) ann, ops));
-        return ops;
+        final Collection<CacheOperation> operations = new ArrayList<>(1);
+        annotations.parallelStream().forEach(annotation -> {
+            if (annotation instanceof Cacheable) {
+                operations.add(parseCacheableAnnotation(annotatedElement, cachingConfig, (Cacheable) annotation));
+                return;
+            }
+            if (annotation instanceof org.springframework.cache.annotation.Cacheable) {
+                operations.add(parseCacheableAnnotation(annotatedElement, cachingConfig, (org.springframework.cache.annotation.Cacheable) annotation));
+                return;
+            }
+            if (annotation instanceof CachePut) {
+                operations.add(parsePutAnnotation(annotatedElement, cachingConfig, (CachePut) annotation));
+                return;
+            }
+            if (annotation instanceof org.springframework.cache.annotation.CachePut) {
+                operations.add(parsePutAnnotation(annotatedElement, cachingConfig, (org.springframework.cache.annotation.CachePut) annotation));
+                return;
+            }
+            if (annotation instanceof CacheEvict) {
+                operations.add(parseEvictAnnotation(annotatedElement, cachingConfig, (CacheEvict) annotation));
+                return;
+            }
+            if (annotation instanceof Caching) {
+                parseCachingAnnotation(annotatedElement, cachingConfig, (Caching) annotation, operations);
+                return;
+            }
+            if(annotation instanceof org.springframework.cache.annotation.Caching){
+                parseCachingAnnotation(annotatedElement, cachingConfig, (org.springframework.cache.annotation.Caching) annotation, operations);
+            }
+        });
+        return operations;
     }
 
-    private CacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Annotation annotation) {
-        wang.liangchen.matrix.mcache.sdk.override.CacheableOperation.Builder builder = new wang.liangchen.matrix.mcache.sdk.override.CacheableOperation.Builder();
+    private CacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable) {
+        CacheableOperation.Builder builder = new CacheableOperation.Builder();
         builder.setName(ae.toString());
-        if (annotation instanceof Cacheable) {
-            Cacheable cacheable = (Cacheable) annotation;
-            builder.setCacheNames(cacheable.cacheNames());
-            builder.setCondition(cacheable.condition());
-            builder.setUnless(cacheable.unless());
-            builder.setKey(cacheable.key());
-            builder.setKeyGenerator(cacheable.keyGenerator());
-            builder.setCacheManager(cacheable.cacheManager());
-            builder.setCacheResolver(cacheable.cacheResolver());
-            builder.setSync(cacheable.sync());
-            builder.setTtl(0L);
-        } else {
-            wang.liangchen.matrix.mcache.sdk.annotation.Cacheable cacheable = (wang.liangchen.matrix.mcache.sdk.annotation.Cacheable) annotation;
-            builder.setCacheNames(cacheable.cacheNames());
-            builder.setCondition(cacheable.condition());
-            builder.setUnless(cacheable.unless());
-            builder.setKey(cacheable.key());
-            builder.setKeyGenerator(cacheable.keyGenerator());
-            builder.setCacheManager(cacheable.cacheManager());
-            builder.setCacheResolver(cacheable.cacheResolver());
-            builder.setSync(cacheable.sync());
-            builder.setTtl(cacheable.ttl());
-        }
+        builder.setCacheNames(cacheable.cacheNames());
+        builder.setCondition(cacheable.condition());
+        builder.setUnless(cacheable.unless());
+        builder.setKey(cacheable.key());
+        builder.setKeyGenerator(cacheable.keyGenerator());
+        builder.setCacheManager(cacheable.cacheManager());
+        builder.setCacheResolver(cacheable.cacheResolver());
+        builder.setSync(cacheable.sync());
+        builder.setTtl(cacheable.ttl());
 
         defaultConfig.applyDefault(builder);
         CacheableOperation op = builder.build();
@@ -127,9 +133,26 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         return op;
     }
 
+    private CacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.Cacheable cacheable) {
+        CacheableOperation.Builder builder = new CacheableOperation.Builder();
+        builder.setName(ae.toString());
+        builder.setCacheNames(cacheable.cacheNames());
+        builder.setCondition(cacheable.condition());
+        builder.setUnless(cacheable.unless());
+        builder.setKey(cacheable.key());
+        builder.setKeyGenerator(cacheable.keyGenerator());
+        builder.setCacheManager(cacheable.cacheManager());
+        builder.setCacheResolver(cacheable.cacheResolver());
+        builder.setSync(cacheable.sync());
+        builder.setTtl(0L);
 
-    private CacheEvictOperation parseEvictAnnotation(
-            AnnotatedElement ae, DefaultCacheConfig defaultConfig, CacheEvict cacheEvict) {
+        defaultConfig.applyDefault(builder);
+        CacheableOperation op = builder.build();
+        validateCacheOperation(ae, op);
+        return op;
+    }
+
+    private CacheEvictOperation parseEvictAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, CacheEvict cacheEvict) {
 
         CacheEvictOperation.Builder builder = new CacheEvictOperation.Builder();
 
@@ -146,45 +169,46 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         defaultConfig.applyDefault(builder);
         CacheEvictOperation op = builder.build();
         validateCacheOperation(ae, op);
-
         return op;
     }
 
-    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Annotation annotation) {
-        wang.liangchen.matrix.mcache.sdk.override.CachePutOperation.Builder builder = new wang.liangchen.matrix.mcache.sdk.override.CachePutOperation.Builder();
+    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, CachePut cachePut) {
+        CachePutOperation.Builder builder = new CachePutOperation.Builder();
         builder.setName(ae.toString());
-        if (annotation instanceof CachePut) {
-            CachePut cachePut = (CachePut) annotation;
-            builder.setCacheNames(cachePut.cacheNames());
-            builder.setCondition(cachePut.condition());
-            builder.setUnless(cachePut.unless());
-            builder.setKey(cachePut.key());
-            builder.setKeyGenerator(cachePut.keyGenerator());
-            builder.setCacheManager(cachePut.cacheManager());
-            builder.setCacheResolver(cachePut.cacheResolver());
-            builder.setTtl(0L);
-        } else {
-            wang.liangchen.matrix.mcache.sdk.annotation.CachePut cachePut = (wang.liangchen.matrix.mcache.sdk.annotation.CachePut) annotation;
-            builder.setCacheNames(cachePut.cacheNames());
-            builder.setCondition(cachePut.condition());
-            builder.setUnless(cachePut.unless());
-            builder.setKey(cachePut.key());
-            builder.setKeyGenerator(cachePut.keyGenerator());
-            builder.setCacheManager(cachePut.cacheManager());
-            builder.setCacheResolver(cachePut.cacheResolver());
-            builder.setTtl(cachePut.ttl());
-        }
+        builder.setCacheNames(cachePut.cacheNames());
+        builder.setCondition(cachePut.condition());
+        builder.setUnless(cachePut.unless());
+        builder.setKey(cachePut.key());
+        builder.setKeyGenerator(cachePut.keyGenerator());
+        builder.setCacheManager(cachePut.cacheManager());
+        builder.setCacheResolver(cachePut.cacheResolver());
+        builder.setTtl(cachePut.ttl());
 
         defaultConfig.applyDefault(builder);
         CachePutOperation op = builder.build();
         validateCacheOperation(ae, op);
-
         return op;
     }
 
-    private void parseCachingAnnotation(
-            AnnotatedElement ae, DefaultCacheConfig defaultConfig, Caching caching, Collection<CacheOperation> ops) {
+    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.CachePut cachePut) {
+        CachePutOperation.Builder builder = new CachePutOperation.Builder();
+        builder.setName(ae.toString());
+        builder.setCacheNames(cachePut.cacheNames());
+        builder.setCondition(cachePut.condition());
+        builder.setUnless(cachePut.unless());
+        builder.setKey(cachePut.key());
+        builder.setKeyGenerator(cachePut.keyGenerator());
+        builder.setCacheManager(cachePut.cacheManager());
+        builder.setCacheResolver(cachePut.cacheResolver());
+        builder.setTtl(0L);
 
+        defaultConfig.applyDefault(builder);
+        CachePutOperation op = builder.build();
+        validateCacheOperation(ae, op);
+        return op;
+    }
+
+    private void parseCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Caching caching, Collection<CacheOperation> ops) {
         Cacheable[] cacheables = caching.cacheable();
         for (Cacheable cacheable : cacheables) {
             ops.add(parseCacheableAnnotation(ae, defaultConfig, cacheable));
@@ -195,6 +219,21 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         }
         CachePut[] cachePuts = caching.put();
         for (CachePut cachePut : cachePuts) {
+            ops.add(parsePutAnnotation(ae, defaultConfig, cachePut));
+        }
+    }
+
+    private void parseCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.Caching caching, Collection<CacheOperation> ops) {
+        org.springframework.cache.annotation.Cacheable[] cacheables = caching.cacheable();
+        for (org.springframework.cache.annotation.Cacheable cacheable : cacheables) {
+            ops.add(parseCacheableAnnotation(ae, defaultConfig, cacheable));
+        }
+        CacheEvict[] cacheEvicts = caching.evict();
+        for (CacheEvict cacheEvict : cacheEvicts) {
+            ops.add(parseEvictAnnotation(ae, defaultConfig, cacheEvict));
+        }
+        org.springframework.cache.annotation.CachePut[] cachePuts = caching.put();
+        for (org.springframework.cache.annotation.CachePut cachePut : cachePuts) {
             ops.add(parsePutAnnotation(ae, defaultConfig, cachePut));
         }
     }

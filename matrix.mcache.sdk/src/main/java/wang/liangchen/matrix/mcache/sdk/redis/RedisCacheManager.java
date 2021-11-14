@@ -1,9 +1,11 @@
-package wang.liangchen.matrix.mcache.sdk.override;
+package wang.liangchen.matrix.mcache.sdk.redis;
 
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.Assert;
+import wang.liangchen.matrix.mcache.sdk.override.AbstractCacheManager;
+import wang.liangchen.matrix.mcache.sdk.override.Cache;
 import wang.liangchen.matrix.mcache.sdk.redis.RedisCache;
 
 import javax.annotation.Nullable;

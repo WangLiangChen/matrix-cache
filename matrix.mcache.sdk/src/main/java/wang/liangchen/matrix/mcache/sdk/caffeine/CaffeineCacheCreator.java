@@ -22,6 +22,7 @@ public enum CaffeineCacheCreator {
         } else {
             cacheBuilder.expireAfterWrite(Duration.ZERO);
         }
+
         return (cacheLoader != null ? cacheBuilder.build(cacheLoader) : cacheBuilder.build());
     }
 

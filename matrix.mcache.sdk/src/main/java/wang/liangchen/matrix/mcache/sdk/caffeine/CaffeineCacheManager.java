@@ -1,4 +1,4 @@
-package wang.liangchen.matrix.mcache.sdk.override;
+package wang.liangchen.matrix.mcache.sdk.caffeine;
 
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
@@ -6,6 +6,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
 import wang.liangchen.matrix.framework.commons.utils.StringUtil;
 import wang.liangchen.matrix.mcache.sdk.caffeine.CaffeineCache;
+import wang.liangchen.matrix.mcache.sdk.override.AbstractCacheManager;
+import wang.liangchen.matrix.mcache.sdk.override.Cache;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
