@@ -3,7 +3,10 @@ package wang.liangchen.matrix.mcache.sdk.override;
 import org.springframework.beans.factory.InitializingBean;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -11,8 +14,16 @@ import java.util.concurrent.ConcurrentMap;
  * @author LiangChen.Wang 2021/4/20
  */
 public abstract class AbstractCacheManager implements CacheManager, InitializingBean {
-    private boolean transactionAware = false;
     private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(64);
+    private final boolean allowNullValues;
+    private final boolean transactionAware;
+    private final List<String> initialCacheNames;
+
+    public AbstractCacheManager(boolean allowNullValues, boolean transactionAware, List<String> initialCacheNames) {
+        this.allowNullValues = allowNullValues;
+        this.transactionAware = transactionAware;
+        this.initialCacheNames = initialCacheNames;
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -24,7 +35,20 @@ public abstract class AbstractCacheManager implements CacheManager, Initializing
         }
     }
 
-    protected abstract Collection<? extends Cache> loadCaches();
+    protected Collection<? extends Cache> loadCaches() {
+        if (null == this.initialCacheNames) {
+            return Collections.emptyList();
+        }
+        int size = this.initialCacheNames.size();
+        if (0 == size) {
+            return Collections.emptyList();
+        }
+        Collection<Cache> caches = new ArrayList<>(initialCacheNames.size());
+        for (String initialCacheName : this.initialCacheNames) {
+            caches.add(getMissingCache(initialCacheName, 0L));
+        }
+        return caches;
+    }
 
     @Override
     public Collection<String> getCacheNames() {
@@ -58,17 +82,16 @@ public abstract class AbstractCacheManager implements CacheManager, Initializing
         return this.cacheMap.get(name);
     }
 
-    public void setTransactionAware(boolean transactionAware) {
-        this.transactionAware = transactionAware;
-    }
-
     public boolean isTransactionAware() {
         return this.transactionAware;
     }
 
+    public boolean isAllowNullValues() {
+        return allowNullValues;
+    }
 
     protected Cache decorateCache(Cache cache) {
-        return (isTransactionAware() ? new TransactionAwareCacheDecorator(cache) : cache);
+        return (this.transactionAware ? new TransactionAwareCacheDecorator(cache) : cache);
     }
 
     @Nullable

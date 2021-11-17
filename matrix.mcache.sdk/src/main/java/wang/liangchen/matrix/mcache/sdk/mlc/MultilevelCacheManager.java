@@ -13,6 +13,7 @@ import wang.liangchen.matrix.mcache.sdk.runner.CacheMessageConsumerRunner;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * @author LiangChen.Wang 2021/3/22
@@ -22,16 +23,12 @@ public class MultilevelCacheManager extends AbstractCacheManager {
     private final StringRedisTemplate stringRedisTemplate;
     private final StreamOperations<String, Object, Object> streamOperations;
 
-    public MultilevelCacheManager(CacheManager localCacheManager, CacheManager distributedCacheManager, StringRedisTemplate stringRedisTemplate) {
+    public MultilevelCacheManager(CacheManager localCacheManager, CacheManager distributedCacheManager, StringRedisTemplate stringRedisTemplate, boolean allowNullValues, boolean transactionAware, List<String> initialCacheNames) {
+        super(allowNullValues, transactionAware, initialCacheNames);
         this.localCacheManager = localCacheManager;
         this.distributedCacheManager = distributedCacheManager;
         this.stringRedisTemplate = stringRedisTemplate;
         this.streamOperations = stringRedisTemplate.opsForStream();
-    }
-
-    @Override
-    protected Collection<? extends Cache> loadCaches() {
-        return Collections.emptySet();
     }
 
     @Nullable

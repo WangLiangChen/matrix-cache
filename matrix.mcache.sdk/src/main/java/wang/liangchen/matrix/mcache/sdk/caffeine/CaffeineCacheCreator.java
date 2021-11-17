@@ -19,18 +19,13 @@ public enum CaffeineCacheCreator {
     public Cache<Object, Object> createNativeCache(Caffeine<Object, Object> cacheBuilder, CacheLoader<Object, Object> cacheLoader, long ttl) {
         if (ttl > 0) {
             cacheBuilder.expireAfterWrite(Duration.ofMillis(ttl));
-        } else {
-            cacheBuilder.expireAfterWrite(Duration.ZERO);
         }
-
         return (cacheLoader != null ? cacheBuilder.build(cacheLoader) : cacheBuilder.build());
     }
 
     public AsyncCache<Object, Object> createNativeAsyncCache(Caffeine<Object, Object> cacheBuilder, CacheLoader<Object, Object> cacheLoader, long ttl) {
         if (ttl > 0) {
             cacheBuilder.expireAfterWrite(Duration.ofMillis(ttl));
-        } else {
-            cacheBuilder.expireAfterWrite(Duration.ZERO);
         }
         return (cacheLoader != null ? cacheBuilder.buildAsync(cacheLoader) : cacheBuilder.buildAsync());
     }

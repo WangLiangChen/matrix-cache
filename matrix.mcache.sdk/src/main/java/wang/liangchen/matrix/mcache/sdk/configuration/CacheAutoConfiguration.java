@@ -35,6 +35,7 @@ import wang.liangchen.matrix.mcache.sdk.redis.RedisCacheManager;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author LiangChen.Wang 2020/9/23
@@ -55,9 +56,9 @@ public class CacheAutoConfiguration {
     @ConditionalOnMissingBean(org.springframework.data.redis.cache.RedisCacheManager.class)
     @OverrideBean("cacheManager")
     public CaffeineCacheManager caffeineCacheManagerOverride(CacheProperties cacheProperties, CacheManagerCustomizers customizers, ObjectProvider<CacheLoader<Object, Object>> cacheLoader) {
-        String specification = cacheProperties.getCaffeine().getSpec();
-        String[] initialCacheNames = cacheProperties.getCacheNames().toArray(new String[0]);
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(specification, cacheLoader.getIfAvailable(), initialCacheNames);
+        String caffeineSpec = cacheProperties.getCaffeine().getSpec();
+        List<String> initialCacheNames = cacheProperties.getCacheNames();
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager(caffeineSpec, true, false, initialCacheNames, cacheLoader.getIfAvailable());
         return customizers.customize(cacheManager);
     }
 
@@ -66,8 +67,22 @@ public class CacheAutoConfiguration {
     @ConditionalOnBean(org.springframework.data.redis.cache.RedisCacheManager.class)
     @ConditionalOnMissingBean(org.springframework.cache.caffeine.CaffeineCacheManager.class)
     @OverrideBean("cacheManager")
-    public RedisCacheManager redisCacheManagerOverride(CacheManagerCustomizers customizers, RedisTemplate<Object, Object> redisTemplate) {
-        RedisCacheManager cacheManager = new RedisCacheManager(redisTemplate, RedisCacheCreator.INSTANCE.cacheWriter(redisTemplate), RedisCacheConfiguration.defaultCacheConfig());
+    public RedisCacheManager redisCacheManagerOverride(CacheProperties cacheProperties, CacheManagerCustomizers customizers, RedisTemplate<Object, Object> redisTemplate) {
+        CacheProperties.Redis redisProperties = cacheProperties.getRedis();
+        RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig();
+        if (redisProperties.getTimeToLive() != null) {
+            defaultCacheConfig = defaultCacheConfig.entryTtl(redisProperties.getTimeToLive());
+        }
+        if (redisProperties.getKeyPrefix() != null) {
+            defaultCacheConfig = defaultCacheConfig.prefixCacheNameWith(redisProperties.getKeyPrefix());
+        }
+        if (!redisProperties.isCacheNullValues()) {
+            defaultCacheConfig = defaultCacheConfig.disableCachingNullValues();
+        }
+        if (!redisProperties.isUseKeyPrefix()) {
+            defaultCacheConfig = defaultCacheConfig.disableKeyPrefix();
+        }
+        RedisCacheManager cacheManager = new RedisCacheManager(redisTemplate, RedisCacheCreator.INSTANCE.cacheWriter(redisTemplate), false, defaultCacheConfig, null);
         return customizers.customize(cacheManager);
     }
 
@@ -79,8 +94,8 @@ public class CacheAutoConfiguration {
         //noinspection SpringConfigurationProxyMethods
         CaffeineCacheManager localCacheManager = this.caffeineCacheManagerOverride(cacheProperties, customizers, cacheLoader);
         //noinspection SpringConfigurationProxyMethods
-        RedisCacheManager distributedCacheManager = this.redisCacheManagerOverride(customizers, redisTemplate);
-        return new MultilevelCacheManager(localCacheManager, distributedCacheManager, stringRedisTemplate);
+        RedisCacheManager distributedCacheManager = this.redisCacheManagerOverride(cacheProperties, customizers, redisTemplate);
+        return new MultilevelCacheManager(localCacheManager, distributedCacheManager, stringRedisTemplate, true, false, null);
     }
 
     @Primary
@@ -95,10 +110,10 @@ public class CacheAutoConfiguration {
     @Primary
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public CacheInterceptor cacheInterceptorOverride(CacheOperationSource cacheOperationSource,CachingConfigurer cachingConfigurer) {
+    public CacheInterceptor cacheInterceptorOverride(CacheOperationSource cacheOperationSource, CachingConfigurer cachingConfigurer) {
         CacheInterceptor cacheInterceptor = new wang.liangchen.matrix.mcache.sdk.override.CacheInterceptor();
         cacheInterceptor.setCacheOperationSource(cacheOperationSource);
-        cacheInterceptor.configure(cachingConfigurer::errorHandler,cachingConfigurer::keyGenerator,cachingConfigurer::cacheResolver,cachingConfigurer::cacheManager);
+        cacheInterceptor.configure(cachingConfigurer::errorHandler, cachingConfigurer::keyGenerator, cachingConfigurer::cacheResolver, cachingConfigurer::cacheManager);
         return cacheInterceptor;
     }
 
