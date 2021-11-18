@@ -8,13 +8,14 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.cache.CacheManagerCustomizers;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
-import org.springframework.boot.autoconfigure.condition.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.AnnotationCacheOperationSource;
 import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.interceptor.*;
-import org.springframework.cache.interceptor.CacheInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Role;
@@ -28,14 +29,15 @@ import wang.liangchen.matrix.mcache.sdk.caffeine.CaffeineCacheManager;
 import wang.liangchen.matrix.mcache.sdk.mlc.MultilevelCacheManager;
 import wang.liangchen.matrix.mcache.sdk.override.CachePutOperation;
 import wang.liangchen.matrix.mcache.sdk.override.CacheableOperation;
-import wang.liangchen.matrix.mcache.sdk.override.*;
+import wang.liangchen.matrix.mcache.sdk.override.SpringCacheAnnotationParser;
 import wang.liangchen.matrix.mcache.sdk.redis.RedisCacheCreator;
 import wang.liangchen.matrix.mcache.sdk.redis.RedisCacheManager;
+import wang.liangchen.matrix.mcache.sdk.runner.CacheMessageConsumerRunner;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * @author LiangChen.Wang 2020/9/23
@@ -96,6 +98,11 @@ public class CacheAutoConfiguration {
         //noinspection SpringConfigurationProxyMethods
         RedisCacheManager distributedCacheManager = this.redisCacheManagerOverride(cacheProperties, customizers, redisTemplate);
         return new MultilevelCacheManager(localCacheManager, distributedCacheManager, stringRedisTemplate, true, false, null);
+    }
+
+    //@Bean
+    public CacheMessageConsumerRunner cacheMessageConsumerRunner(Executor executor, CacheManager cacheManager) {
+        return new CacheMessageConsumerRunner(executor, cacheManager);
     }
 
     @Primary

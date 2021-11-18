@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
  */
 public class MultilevelCache implements Cache {
     private final Logger logger = LoggerFactory.getLogger(MultilevelCache.class);
-    private final String LOCK_KEY = "MultilevelCache";
-    private final String loggerPrefix;
     private final String name;
     private final long ttl;
     private final Cache localCache;
@@ -37,26 +35,25 @@ public class MultilevelCache implements Cache {
         this.multilevelCacheManager = multilevelCacheManager;
         this.localCache = multilevelCacheManager.getLocalCache(name, ttl);
         this.distributedCache = multilevelCacheManager.getDistributedCache(name, ttl);
-        this.loggerPrefix = String.format("MultilevelCache(name:%s,ttl:%d)", name,ttl);
-        logger.debug("Construct {}", this);
     }
 
     @Override
     public ValueWrapper get(Object key) {
-        logger.debug(loggerPrefix("get", "key"), key);
+        logger.debug(loggerPrefix("get,local", key));
         // null说明缓存不存在
         ValueWrapper valueWrapper = localCache.get(key);
-        logger.debug(loggerPrefix("getFromLocal", "key", "valueWrapper", "value"), key, valueWrapper, null == valueWrapper ? null : JsonUtil.INSTANCE.toJsonString(valueWrapper.get()));
         if (null != valueWrapper) {
+            logger.debug(loggerPrefix("get,local,hit", key, "value"), valueWrapper.get().toString());
             return valueWrapper;
         }
+        logger.debug(loggerPrefix("get,local,miss,remote", key));
         valueWrapper = distributedCache.get(key);
         if (null == valueWrapper) {
-            logger.debug(loggerPrefix("getFromRemote", "key", "valueWrapper"), key, null);
+            logger.debug(loggerPrefix("get,remote,miss", key, "value"), valueWrapper.get().toString());
             return null;
         }
         Object value = valueWrapper.get();
-        logger.debug(loggerPrefix("getFromRemote,putIntoLocal", "key", "value"), key, JsonUtil.INSTANCE.toJsonString(value));
+        logger.debug(loggerPrefix("get,remote,hit,>local", key, "value"), valueWrapper.get().toString());
         // 写入localCache
         localCache.put(key, value);
         return valueWrapper;
@@ -64,81 +61,53 @@ public class MultilevelCache implements Cache {
 
     @Override
     public <T> T get(Object key, Class<T> type) {
-        logger.debug(loggerPrefix("get", "key", "type"), key, type);
-        // null说明缓存不存在
-        ValueWrapper valueWrapper = localCache.get(key);
-        logger.debug(loggerPrefix("getFromLocal", "key", "type", "valueWrapper", "value"), key, type, valueWrapper, null == valueWrapper ? null : JsonUtil.INSTANCE.toJsonString(valueWrapper.get()));
-        if (null != valueWrapper) {
-            return localCache.get(key, type);
-        }
-        valueWrapper = distributedCache.get(key);
+        logger.debug(loggerPrefix("getWithType", key, "type"), type.getName());
+        ValueWrapper valueWrapper = get(key);
         if (null == valueWrapper) {
-            logger.debug(loggerPrefix("getFromRemote", "key", "type", "valueWrapper"), key, type, null);
             return null;
         }
-        T value = distributedCache.get(key, type);
-        logger.debug(loggerPrefix("getFromRemote,putIntoLocal", "key", "type", "value"), key, type, JsonUtil.INSTANCE.toJsonString(value));
-        // 写入localCache
-        localCache.put(key, value);
-        return value;
+        return ObjectUtil.INSTANCE.cast(valueWrapper.get());
     }
 
     @Override
     public <T> T get(Object key, Callable<T> valueLoader) {
-        logger.debug(loggerPrefix("syncGet", "key", "valueLoader"), key, valueLoader);
-        String lockKey = String.format("%s::%s::%s", LOCK_KEY, this.name, key);
-        return LocalLockUtil.INSTANCE.executeInReadWriteLock( () -> {
-            ValueWrapper valueWrapper = this.get(key);
-            if (null == valueWrapper) {
-                logger.debug(loggerPrefix("syncGet with readLock", "key", "valueWrapper"), key, null);
-                return null;
-            }
-            Object value = valueWrapper.get();
-            logger.debug(loggerPrefix("syncGet with readLock", "key", "value"), key, JsonUtil.INSTANCE.toJsonString(value));
-            return new LockReader.LockValueWrapper<>(ObjectUtil.INSTANCE.cast(value));
-        }, () -> {
-            try {
-                T value = valueLoader.call();
-                logger.debug(loggerPrefix("syncGet with writeLock", "key", "value"), key, JsonUtil.INSTANCE.toJsonString(value));
-                this.put(key, value);
-                return value;
-            } catch (Exception e) {
-                throw new ValueRetrievalException(key, valueLoader, e);
-            }
-        });
+        logger.debug(loggerPrefix("getWithValueLoader", key));
+        distributedCache.get(key, valueLoader);
+        return localCache.get(key, valueLoader);
     }
 
     @Override
     public void put(Object key, Object value) {
-        logger.debug(loggerPrefix("put", "key", "value"), key, JsonUtil.INSTANCE.toJsonString(value));
+        logger.debug(loggerPrefix("put", key, "value"), value.toString());
         distributedCache.put(key, value);
         localCache.put(key, value);
     }
 
     @Override
     public void evict(Object key) {
-        logger.debug(loggerPrefix("evict", "key"), key);
+        logger.debug(loggerPrefix("evict", key));
         distributedCache.evict(key);
-        // 发送消息
+        localCache.evict(key);
+        // 通过redis发送消息
         multilevelCacheManager.sendCacheMessage(CacheMessage.newInstance(this.name, CacheMessage.Action.evict, key));
     }
 
     public void evictLocal(Object key) {
-        logger.debug(loggerPrefix("evictLocal", "key"), key);
+        logger.debug(loggerPrefix("evictLocal", key));
         localCache.evict(key);
     }
 
     @Override
     public void clear() {
-        logger.debug(loggerPrefix("clear"));
-        localCache.clear();
+        logger.debug(loggerPrefix("clear", ""));
         distributedCache.clear();
+        localCache.clear();
         // 发送消息
         multilevelCacheManager.sendCacheMessage(CacheMessage.newInstance(this.name, CacheMessage.Action.clear));
     }
 
     public void clearLocal() {
-        logger.debug(loggerPrefix("clearLocal"));
+        logger.debug(loggerPrefix("clearLocal", ""));
         localCache.clear();
     }
 
@@ -167,12 +136,10 @@ public class MultilevelCache implements Cache {
         return this;
     }
 
-    private String loggerPrefix(String method, String... args) {
+    private String loggerPrefix(String action, Object key, String... args) {
+        String loggerPrefix = String.format("MultilevelCache(name:%s,ttl:%d,action:%s,key:%s)", name, ttl, action, key.toString());
         String suffix = Arrays.stream(args).map(e -> String.format("%s:{}", e)).collect(Collectors.joining(","));
-        if (null == suffix || suffix.length() == 0) {
-            return String.format("%s\r\n - Method(name:%s)", loggerPrefix, method);
-        }
-        return String.format("%s\r\n - Method(name:%s,%s)", loggerPrefix, method, suffix);
+        return String.format("%s - Args(%s)", loggerPrefix, suffix);
     }
 
     @Override

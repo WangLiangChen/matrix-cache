@@ -4,6 +4,7 @@ package wang.liangchen.matrix.mcache.sdk.caffeine;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
+import wang.liangchen.matrix.framework.commons.utils.StringUtil;
 import wang.liangchen.matrix.mcache.sdk.override.AbstractCacheManager;
 import wang.liangchen.matrix.mcache.sdk.override.Cache;
 
@@ -21,7 +22,11 @@ public class CaffeineCacheManager extends AbstractCacheManager {
 
     public CaffeineCacheManager(String caffeineSpec, boolean allowNullValues, boolean transactionAware, List<String> initialCacheNames, CacheLoader<Object, Object> cacheLoader) {
         super(allowNullValues, transactionAware, initialCacheNames);
-        this.caffeineSpec = CaffeineSpec.parse(caffeineSpec);
+        if (StringUtil.INSTANCE.isBlank(caffeineSpec)) {
+            this.caffeineSpec = null;
+        } else {
+            this.caffeineSpec = CaffeineSpec.parse(caffeineSpec);
+        }
         this.initialCacheNames = initialCacheNames;
         this.cacheLoader = cacheLoader;
     }
@@ -29,6 +34,6 @@ public class CaffeineCacheManager extends AbstractCacheManager {
     @Nullable
     @Override
     protected Cache getMissingCache(String name, long ttl) {
-        return new CaffeineCache(name, ttl, this.isAllowNullValues(), Caffeine.from(this.caffeineSpec), this.cacheLoader);
+        return new CaffeineCache(name, ttl, this.isAllowNullValues(), null == this.caffeineSpec ? Caffeine.newBuilder() : Caffeine.from(this.caffeineSpec), this.cacheLoader);
     }
 }
