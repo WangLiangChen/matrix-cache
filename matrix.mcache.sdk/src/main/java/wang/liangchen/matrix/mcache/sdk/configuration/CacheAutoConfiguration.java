@@ -100,7 +100,7 @@ public class CacheAutoConfiguration {
         return new MultilevelCacheManager(localCacheManager, distributedCacheManager, stringRedisTemplate, true, false, null);
     }
 
-    //@Bean
+    @Bean
     public CacheMessageConsumerRunner cacheMessageConsumerRunner(Executor executor, CacheManager cacheManager) {
         return new CacheMessageConsumerRunner(executor, cacheManager);
     }
