@@ -23,7 +23,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import wang.liangchen.matrix.framework.commons.json.JsonUtil;
-import wang.liangchen.matrix.framework.commons.secret.HashUtil;
+import wang.liangchen.matrix.framework.commons.digest.HashUtil;
 import wang.liangchen.matrix.framework.springboot.annotation.OverrideBean;
 import wang.liangchen.matrix.mcache.sdk.caffeine.CaffeineCacheManager;
 import wang.liangchen.matrix.mcache.sdk.mlc.MultilevelCacheManager;

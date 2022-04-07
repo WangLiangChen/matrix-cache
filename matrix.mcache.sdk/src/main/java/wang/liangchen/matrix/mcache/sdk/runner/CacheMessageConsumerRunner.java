@@ -12,7 +12,7 @@ import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
-import wang.liangchen.matrix.framework.commons.exception.AssertUtil;
+import wang.liangchen.matrix.framework.commons.exception.Assert;
 import wang.liangchen.matrix.framework.commons.json.JsonUtil;
 import wang.liangchen.matrix.mcache.sdk.mlc.MultilevelCache;
 import wang.liangchen.matrix.mcache.sdk.mlc.MultilevelCacheManager;
@@ -115,10 +115,10 @@ public class CacheMessageConsumerRunner implements ApplicationRunner, Disposable
         } catch (Exception exception) {
             ObjectRecord<String, CacheMessage> record = StreamRecords.newRecord().ofObject(CacheMessage.newInstance("name", CacheMessage.Action.none)).withStreamKey(EXPIRE_CHANNEL);
             RecordId initialRecord = streamOperations.add(record);
-            AssertUtil.INSTANCE.notNull(initialRecord, "Cannot initialize stream with key '" + EXPIRE_CHANNEL + "'");
+            Assert.INSTANCE.notNull(initialRecord, "Cannot initialize stream with key '" + EXPIRE_CHANNEL + "'");
             status = streamOperations.createGroup(EXPIRE_CHANNEL, ReadOffset.from(initialRecord), EXPIRE_GROUP);
         } finally {
-            AssertUtil.INSTANCE.isTrue("OK".equals(status), "Cannot create group with name '" + EXPIRE_GROUP + "'");
+            Assert.INSTANCE.isTrue("OK".equals(status), "Cannot create group with name '" + EXPIRE_GROUP + "'");
         }
     }
 }

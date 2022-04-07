@@ -4,11 +4,11 @@ import org.apache.commons.configuration2.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
-import wang.liangchen.matrix.framework.commons.exception.AssertUtil;
+import wang.liangchen.matrix.framework.commons.exception.Assert;
 import wang.liangchen.matrix.framework.commons.exception.MatrixInfoException;
 import wang.liangchen.matrix.framework.commons.network.NetUtil;
 import wang.liangchen.matrix.framework.commons.utils.PrettyPrinter;
-import wang.liangchen.matrix.framework.commons.utils.StringUtil;
+import wang.liangchen.matrix.framework.commons.string.StringUtil;
 import wang.liangchen.matrix.framework.springboot.context.ConfigurationContext;
 import wang.liangchen.matrix.mcache.sdk.configuration.RedisAutoConfiguration;
 import wang.liangchen.matrix.mcache.sdk.enumeration.CacheStatus;
@@ -36,7 +36,7 @@ public @interface EnableRedis {
             PrettyPrinter.INSTANCE.buffer("@EnableRedis match: {}", annotationMetadata.getClassName());
             //判断是否集群配置
             String[] nodes = configuration.getStringArray("cluster.nodes");
-            AssertUtil.INSTANCE.notEmpty(nodes, "The configuration 'nodes' is required!");
+            Assert.INSTANCE.notEmpty(nodes, "The configuration 'nodes' is required!");
             PrettyPrinter.INSTANCE.buffer("Redis is {} mode......", nodes.length > 1 ? "Cluster" : "Standalone");
             for (String node : nodes) {
                 int index = node.indexOf(':');
