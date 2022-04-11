@@ -23,7 +23,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import wang.liangchen.matrix.framework.commons.json.JsonUtil;
-import wang.liangchen.matrix.framework.commons.digest.HashUtil;
+import wang.liangchen.matrix.framework.commons.encryption.DigestUtil;
 import wang.liangchen.matrix.framework.springboot.annotation.OverrideBean;
 import wang.liangchen.matrix.mcache.sdk.caffeine.CaffeineCacheManager;
 import wang.liangchen.matrix.mcache.sdk.mlc.MultilevelCacheManager;
@@ -172,7 +172,7 @@ public class CacheAutoConfiguration {
                     key.append(target.getClass().getName()).append(".").append(method.getName()).append(":");
                     if (params.length == 0) {
                         key.append(NO_PARAM_KEY);
-                        return HashUtil.INSTANCE.md5Digest(key.toString());
+                        return DigestUtil.INSTANCE.md5Digest(key.toString());
                     }
                     Object param;
                     for (int i = 0; i < params.length; i++) {
@@ -187,7 +187,7 @@ public class CacheAutoConfiguration {
                         key.append(JsonUtil.INSTANCE.toJsonStringWithTransientField(param));
                     }
                     logger.debug("Generated key:{}", key);
-                    return HashUtil.INSTANCE.md5Digest(key.toString());
+                    return DigestUtil.INSTANCE.md5Digest(key.toString());
                 };
             }
 
