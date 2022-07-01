@@ -3,13 +3,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>wang.liangchen.matrix</groupId>
-    <artifactId>matrix-mcache</artifactId>
+    <groupId>wang.liangchen.matrix.easycache</groupId>
+    <artifactId>matrix-easycache</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <modules>
-        <module>matrix.mcache.sdk</module>
-    </modules>
     <packaging>pom</packaging>
+
+    <modules>
+        <module>matrix-easycache-sdk</module>
+        <module>matrix-easycache-cache</module>
+    </modules>
 
     <name>${project.artifactId}</name>
     <description>A rapid development framework based on springboot,which is distributed, asynchronous non-blocking and reactive
@@ -47,43 +49,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <version.matrix>1.0.0-SNAPSHOT</version.matrix>
-        <version.springboot>2.5.6</version.springboot>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${version.springboot}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>wang.liangchen.matrix</groupId>
-                <artifactId>matrix-framework-core</artifactId>
-                <version>${version.matrix}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>
-            <groupId>wang.liangchen.matrix</groupId>
-            <artifactId>matrix-framework-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+            <version>2.7.1</version>
         </dependency>
     </dependencies>
 
