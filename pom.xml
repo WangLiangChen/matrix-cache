@@ -10,13 +10,11 @@
 
     <modules>
         <module>matrix-easycache-sdk</module>
-        <module>matrix-easycache-cache</module>
     </modules>
 
     <name>${project.artifactId}</name>
-    <description>A rapid development framework based on springboot,which is distributed, asynchronous non-blocking and reactive
-    </description>
-    <url>https://github.com/WangLiangChen/matrix-mcache</url>
+    <description>easycache is a Multilevel cache</description>
+    <url>https://github.com/WangLiangChen/matrix-easycache</url>
 
     <licenses>
         <license>
@@ -26,9 +24,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/WangLiangChen/matrix-mcache.git</connection>
-        <developerConnection>scm:git:ssh://github.com/WangLiangChen/matrix-mcache.git</developerConnection>
-        <url>https://github.com/WangLiangChen/matrix-mcache</url>
+        <connection>scm:git:git://github.com/WangLiangChen/matrix-easycache.git</connection>
+        <developerConnection>scm:git:ssh://github.com/WangLiangChen/matrix-easycache.git</developerConnection>
+        <url>https://github.com/WangLiangChen/matrix-easycache</url>
     </scm>
 
     <developers>
@@ -49,23 +47,31 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <version.springboot>2.7.1</version.springboot>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${version.springboot}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-cache</artifactId>
-            <version>2.7.1</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <resources>
             <resource>
                 <directory>src/main/java</directory>
                 <includes>
-                    <include>**/*.xml</include>
+                    <include>**/*.yaml</include>
+                    <include>**/*.yml</include>
                     <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.sql</include>
                     <include>**/META-INF/*</include>
                 </includes>
                 <filtering>true</filtering>
@@ -73,10 +79,12 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <includes>
-                    <include>**/*.xml</include>
+                    <include>**/*.yaml</include>
+                    <include>**/*.yml</include>
                     <include>**/*.properties</include>
-                    <include>**/META-INF/*</include>
+                    <include>**/*.xml</include>
                     <include>**/*.sql</include>
+                    <include>**/META-INF/*</include>
                 </includes>
                 <filtering>true</filtering>
             </resource>
