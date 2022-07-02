@@ -31,5 +31,5 @@ public @interface CachePut {
 
     String unless() default "";
 
-    long ttl() default 0;
+    long ttlMs() default 0;
 }

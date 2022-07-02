@@ -1,26 +1,27 @@
 package wang.liangchen.matrix.easycache.sdk.override;
 
+import java.time.Duration;
+
 /**
  * @author LiangChen.Wang 2021/3/19
  */
 public class CacheableOperation extends org.springframework.cache.interceptor.CacheableOperation {
 
-    private final long ttl;
+    private final Duration ttl;
 
     public CacheableOperation(Builder builder) {
         super(builder);
         this.ttl = builder.ttl;
     }
-
-    public long getTtl() {
+    public Duration getTtl() {
         return ttl;
     }
 
     public static class Builder extends org.springframework.cache.interceptor.CacheableOperation.Builder {
 
-        private long ttl;
+        private Duration ttl;
 
-        public void setTtl(long ttl) {
+        public void setTtl(Duration ttl) {
             this.ttl = ttl;
         }
 

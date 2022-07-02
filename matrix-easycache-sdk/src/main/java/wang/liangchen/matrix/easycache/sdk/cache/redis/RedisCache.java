@@ -6,7 +6,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import wang.liangchen.matrix.easycache.sdk.override.Cache;
+import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 
 import java.time.Duration;
 import java.util.Set;

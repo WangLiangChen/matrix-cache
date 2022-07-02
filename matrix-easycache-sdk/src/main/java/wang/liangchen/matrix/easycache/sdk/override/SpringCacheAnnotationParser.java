@@ -17,6 +17,7 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -27,17 +28,15 @@ import java.util.Set;
  */
 public class SpringCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
-    private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<>(8);
-
-    static {
-        CACHE_OPERATION_ANNOTATIONS.add(Cacheable.class);
-        CACHE_OPERATION_ANNOTATIONS.add(org.springframework.cache.annotation.Cacheable.class);
-        CACHE_OPERATION_ANNOTATIONS.add(CacheEvict.class);
-        CACHE_OPERATION_ANNOTATIONS.add(CachePut.class);
-        CACHE_OPERATION_ANNOTATIONS.add(org.springframework.cache.annotation.CachePut.class);
-        CACHE_OPERATION_ANNOTATIONS.add(Caching.class);
-        CACHE_OPERATION_ANNOTATIONS.add(org.springframework.cache.annotation.Caching.class);
-    }
+    private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<Class<? extends Annotation>>() {{
+        add(Cacheable.class);
+        add(org.springframework.cache.annotation.Cacheable.class);
+        add(CacheEvict.class);
+        add(CachePut.class);
+        add(org.springframework.cache.annotation.CachePut.class);
+        add(Caching.class);
+        add(org.springframework.cache.annotation.Caching.class);
+    }};
 
 
     @Override
@@ -81,7 +80,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
             return null;
         }
 
-        final Collection<CacheOperation> operations = new ArrayList<>(1);
+        final Collection<CacheOperation> operations = new ArrayList<>();
         annotations.parallelStream().forEach(annotation -> {
             if (annotation instanceof Cacheable) {
                 operations.add(parseCacheableAnnotation(annotatedElement, cachingConfig, (Cacheable) annotation));
@@ -107,7 +106,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
                 parseCachingAnnotation(annotatedElement, cachingConfig, (Caching) annotation, operations);
                 return;
             }
-            if(annotation instanceof org.springframework.cache.annotation.Caching){
+            if (annotation instanceof org.springframework.cache.annotation.Caching) {
                 parseCachingAnnotation(annotatedElement, cachingConfig, (org.springframework.cache.annotation.Caching) annotation, operations);
             }
         });
@@ -125,7 +124,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setCacheManager(cacheable.cacheManager());
         builder.setCacheResolver(cacheable.cacheResolver());
         builder.setSync(cacheable.sync());
-        builder.setTtl(cacheable.ttl());
+        builder.setTtl(Duration.ofMillis(cacheable.ttlMs()));
 
         defaultConfig.applyDefault(builder);
         CacheableOperation op = builder.build();
@@ -144,7 +143,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setCacheManager(cacheable.cacheManager());
         builder.setCacheResolver(cacheable.cacheResolver());
         builder.setSync(cacheable.sync());
-        builder.setTtl(0L);
+        builder.setTtl(Duration.ZERO);
 
         defaultConfig.applyDefault(builder);
         CacheableOperation op = builder.build();
@@ -182,7 +181,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setKeyGenerator(cachePut.keyGenerator());
         builder.setCacheManager(cachePut.cacheManager());
         builder.setCacheResolver(cachePut.cacheResolver());
-        builder.setTtl(cachePut.ttl());
+        builder.setTtl(Duration.ofMillis(cachePut.ttlMs()));
 
         defaultConfig.applyDefault(builder);
         CachePutOperation op = builder.build();
@@ -200,7 +199,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setKeyGenerator(cachePut.keyGenerator());
         builder.setCacheManager(cachePut.cacheManager());
         builder.setCacheResolver(cachePut.cacheResolver());
-        builder.setTtl(0L);
+        builder.setTtl(Duration.ZERO);
 
         defaultConfig.applyDefault(builder);
         CachePutOperation op = builder.build();
@@ -238,16 +237,6 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         }
     }
 
-
-    /**
-     * Validates the specified {@link CacheOperation}.
-     * <p>Throws an {@link IllegalStateException} if the state of the operation is
-     * invalid. As there might be multiple sources for default values, this ensure
-     * that the operation is in a proper state before being returned.
-     *
-     * @param ae        the annotated element of the cache operation
-     * @param operation the {@link CacheOperation} to validate
-     */
     private void validateCacheOperation(AnnotatedElement ae, CacheOperation operation) {
         if (StringUtils.hasText(operation.getKey()) && StringUtils.hasText(operation.getKeyGenerator())) {
             throw new IllegalStateException("Invalid cache annotation configuration on '" +

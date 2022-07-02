@@ -72,7 +72,7 @@
                     <include>**/*.properties</include>
                     <include>**/*.xml</include>
                     <include>**/*.sql</include>
-                    <include>**/META-INF/*</include>
+                    <include>**/META-INF/**</include>
                 </includes>
                 <filtering>true</filtering>
             </resource>
@@ -84,7 +84,7 @@
                     <include>**/*.properties</include>
                     <include>**/*.xml</include>
                     <include>**/*.sql</include>
-                    <include>**/META-INF/*</include>
+                    <include>**/META-INF/**</include>
                 </includes>
                 <filtering>true</filtering>
             </resource>

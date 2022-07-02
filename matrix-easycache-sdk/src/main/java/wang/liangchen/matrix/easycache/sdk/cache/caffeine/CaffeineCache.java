@@ -2,7 +2,7 @@ package wang.liangchen.matrix.easycache.sdk.cache.caffeine;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wang.liangchen.matrix.easycache.sdk.override.Cache;
+import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 
 import java.time.Duration;
 import java.util.HashSet;

@@ -30,7 +30,7 @@ public @interface EnableRedis {
             String nodes = environment.getProperty("cluster.nodes");
 
 
-            String[] imports = new String[]{RedisAutoConfiguration.class.getName()};
+            String[] imports = new String[0];
             // 设置全局redis状态
             CacheStatus.INSTANCE.setDistributedCacheEnable(true);
             return imports;

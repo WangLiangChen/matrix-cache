@@ -32,5 +32,5 @@ public @interface Cacheable {
 
     boolean sync() default false;
 
-    long ttl() default 0;
+    long ttlMs() default 0;
 }

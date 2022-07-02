@@ -4,8 +4,8 @@ package wang.liangchen.matrix.easycache.sdk.cache.caffeine;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.lang.Nullable;
-import wang.liangchen.matrix.easycache.sdk.override.AbstractCacheManager;
-import wang.liangchen.matrix.easycache.sdk.override.Cache;
+import wang.liangchen.matrix.easycache.sdk.cache.AbstractCacheManager;
+import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 
 import java.time.Duration;
 
