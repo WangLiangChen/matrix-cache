@@ -22,6 +22,11 @@ public class CaffeineCacheManager extends AbstractCacheManager {
         this.cacheLoader = cacheLoader;
     }
 
+    public CaffeineCacheManager(Caffeine<Object, Object> cacheBuilder) {
+        this.cacheBuilder = cacheBuilder;
+        this.cacheLoader = null;
+    }
+
 
     @Override
     protected Cache getMissingCache(String name, Duration ttl) {
@@ -33,9 +38,11 @@ public class CaffeineCacheManager extends AbstractCacheManager {
     }
 
     private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(String name, Duration ttl) {
-        if (ttl.toNanos() > 0) {
-            this.cacheBuilder.expireAfterWrite(ttl);
+        Caffeine<Object, Object> innerCacheBuilder = this.cacheBuilder;
+        if (Duration.ZERO.compareTo(ttl) < 0) {
+            innerCacheBuilder = Caffeine.newBuilder();
+            innerCacheBuilder.expireAfterWrite(ttl);
         }
-        return (this.cacheLoader != null ? this.cacheBuilder.build(this.cacheLoader) : this.cacheBuilder.build());
+        return (this.cacheLoader != null ? innerCacheBuilder.build(this.cacheLoader) : innerCacheBuilder.build());
     }
 }

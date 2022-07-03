@@ -7,8 +7,13 @@ import wang.liangchen.matrix.easycache.sdk.annotation.Cacheable;
 @Component
 public class CacheComponent {
 
-    @Cacheable(cacheNames = "wanglc", ttl = 100)
+    @Cacheable(cacheNames = "cacheable", ttlMs = 100000)
     public String cacheable() {
-        return "";
+        return "1000";
+    }
+
+    @Cacheable(cacheNames = "springCacheable", ttlMs = 200000)
+    public String springCacheable() {
+        return "2000";
     }
 }

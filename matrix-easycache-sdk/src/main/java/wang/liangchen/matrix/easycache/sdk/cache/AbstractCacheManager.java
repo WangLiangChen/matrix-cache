@@ -28,7 +28,10 @@ public abstract class AbstractCacheManager implements CacheManager {
         if (cache != null) {
             return cache;
         }
-        return this.cacheMap.computeIfAbsent(name, cacheName -> decorateCache(getMissingCache(name, ttl)));
+        return this.cacheMap.computeIfAbsent(name, cacheName -> {
+            updateCacheNames(name);
+            return decorateCache(getMissingCache(name, ttl));
+        });
     }
 
     @Override
