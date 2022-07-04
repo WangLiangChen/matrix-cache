@@ -1,35 +1,33 @@
-package wang.liangchen.matrix.easycache.sdk.cache.redis;
+package wang.liangchen.matrix.easycache.sdk.cache.caffeine;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheWriter;
-import org.springframework.data.redis.core.BoundSetOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
- * 扩展补充spring的RedisCache
- *
  * @author LiangChen.Wang
  */
-public class RedisCache extends org.springframework.data.redis.cache.RedisCache implements Cache {
-    private final static Logger logger = LoggerFactory.getLogger(RedisCache.class);
+public class MatrixCaffeineCache extends org.springframework.cache.caffeine.CaffeineCache implements Cache {
+    private final static Logger logger = LoggerFactory.getLogger(MatrixCaffeineCache.class);
+    /**
+     * time to live - ttl
+     * time to idle - tti
+     */
     private final Duration ttl;
-    private final BoundSetOperations<Object, Object> keys;
+    private final Set<Object> keys = new HashSet<>();
 
-    public RedisCache(String name, RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object,Object> redisTemplate) {
-        super(name, cacheWriter, cacheConfig);
-        this.ttl = cacheConfig.getTtl();
-        String keysKey = this.createCacheKey("keys");
-        this.keys = redisTemplate.boundSetOps(keysKey);
-        // 有key才能设置expire,所以先add一个
-        this.keys.add("");
-        this.keys.expire(ttl);
+    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, Duration ttl) {
+        this(name, cache, true, ttl);
+    }
+
+    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, boolean allowNullValues, Duration ttl) {
+        super(name, cache, allowNullValues);
+        this.ttl = ttl;
     }
 
     @Override
@@ -55,18 +53,17 @@ public class RedisCache extends org.springframework.data.redis.cache.RedisCache 
     @Override
     public void clear() {
         super.clear();
-        Set<Object> members = keys.members();
-        keys.remove(members.toArray());
+        keys.clear();
     }
 
     @Override
     public Set<Object> keys() {
-        return this.keys.members();
+        return this.keys;
     }
 
     @Override
     public boolean containsKey(Object key) {
-        return keys.isMember(key);
+        return this.keys.contains(key);
     }
 
     @Override
@@ -76,7 +73,7 @@ public class RedisCache extends org.springframework.data.redis.cache.RedisCache 
 
     @Override
     public String toString() {
-        return "RedisCache{" +
+        return "MatrixCaffeineCache{" +
                 "name='" + getName() + '\'' +
                 ", ttl=" + ttl +
                 ", allowNullValues=" + isAllowNullValues() +

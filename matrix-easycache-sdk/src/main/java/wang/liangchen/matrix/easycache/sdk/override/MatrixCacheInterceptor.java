@@ -4,9 +4,8 @@ package wang.liangchen.matrix.easycache.sdk.override;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.*;
-import org.springframework.cache.interceptor.CachePutOperation;
-import org.springframework.cache.interceptor.CacheableOperation;
 import org.springframework.context.expression.AnnotatedElementKey;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.CachedExpressionEvaluator;
@@ -22,37 +21,43 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CacheInterceptor extends org.springframework.cache.interceptor.CacheInterceptor {
+class MatrixCacheInterceptor extends org.springframework.cache.interceptor.CacheInterceptor {
     private boolean initialized = false;
     private static final Object NO_RESULT = new Object();
     private static final Object RESULT_UNAVAILABLE = new Object();
     private final CacheOperationExpressionEvaluator evaluator = new CacheOperationExpressionEvaluator();
-    @Nullable
-    private BeanFactory beanFactory;
+    private final Map<CacheOperationCacheKey, CacheOperationMetadata> metadataCache = new ConcurrentHashMap(1024);
+
+    @Override
+    public void afterSingletonsInstantiated() {
+        super.afterSingletonsInstantiated();
+        this.initialized = true;
+    }
 
     @Override
     protected Object execute(CacheOperationInvoker invoker, Object target, Method method, Object[] args) {
         // Check whether aspect is enabled (to cope with cases where the AJ is pulled in automatically)
-        if (this.initialized) {
-            Class<?> targetClass = getTargetClass(target);
-            CacheOperationSource cacheOperationSource = getCacheOperationSource();
-            if (cacheOperationSource != null) {
-                Collection<CacheOperation> operations = cacheOperationSource.getCacheOperations(method, targetClass);
-                if (!CollectionUtils.isEmpty(operations)) {
-                    return execute(invoker, method,
-                            new CacheOperationContexts(operations, method, args, target, targetClass));
-                }
-            }
+        if (!this.initialized) {
+            return invoker.invoke();
         }
-
-        return invoker.invoke();
+        CacheOperationSource cacheOperationSource = getCacheOperationSource();
+        if (null == cacheOperationSource) {
+            return invoker.invoke();
+        }
+        Class<?> targetClass = getTargetClass(target);
+        // 获取注解的解析结果，将注解解析为CacheOperation
+        Collection<CacheOperation> operations = cacheOperationSource.getCacheOperations(method, targetClass);
+        if (CollectionUtils.isEmpty(operations)) {
+            return invoker.invoke();
+        }
+        return execute(invoker, method, new CacheOperationContexts(operations, method, args, target, targetClass));
     }
 
     @Nullable
     private Object execute(final CacheOperationInvoker invoker, Method method, CacheOperationContexts contexts) {
         // Special handling of synchronized invocation
         if (contexts.isSynchronized()) {
-            CacheOperationContext context = contexts.get(org.springframework.cache.interceptor.CacheableOperation.class).iterator().next();
+            CacheOperationContext context = contexts.get(MatrixCacheableOperation.class).iterator().next();
             if (isConditionPassing(context, NO_RESULT)) {
                 Object key = generateKey(context, NO_RESULT);
                 Cache cache = context.getCaches().iterator().next();
@@ -74,13 +79,12 @@ public class CacheInterceptor extends org.springframework.cache.interceptor.Cach
         processCacheEvicts(contexts.get(CacheEvictOperation.class), true, NO_RESULT);
 
         // Check if we have a cached item matching the conditions
-        Cache.ValueWrapper cacheHit = findCachedItem(contexts.get(org.springframework.cache.interceptor.CacheableOperation.class));
+        Cache.ValueWrapper cacheHit = findCachedItem(contexts.get(MatrixCacheableOperation.class));
 
         // Collect puts from any @Cacheable miss, if no cached item is found
         List<CachePutRequest> cachePutRequests = new ArrayList<>();
         if (cacheHit == null) {
-            collectPutRequests(contexts.get(org.springframework.cache.interceptor.CacheableOperation.class),
-                    NO_RESULT, cachePutRequests);
+            collectPutRequests(contexts.get(MatrixCacheableOperation.class), NO_RESULT, cachePutRequests);
         }
 
         Object cacheValue;
@@ -97,7 +101,7 @@ public class CacheInterceptor extends org.springframework.cache.interceptor.Cach
         }
 
         // Collect any explicit @CachePuts
-        collectPutRequests(contexts.get(org.springframework.cache.interceptor.CachePutOperation.class), cacheValue, cachePutRequests);
+        collectPutRequests(contexts.get(MatrixCachePutOperation.class), cacheValue, cachePutRequests);
 
         // Process any collected put requests, either from @CachePut or a @Cacheable miss
         for (CachePutRequest cachePutRequest : cachePutRequests) {
@@ -112,8 +116,8 @@ public class CacheInterceptor extends org.springframework.cache.interceptor.Cach
 
     private boolean hasCachePut(CacheOperationContexts contexts) {
         // Evaluate the conditions *without* the result object because we don't have it yet...
-        Collection<CacheOperationContext> cachePutContexts = contexts.get(CachePutOperation.class);
-        Collection<CacheAspectSupport.CacheOperationContext> excluded = new ArrayList<>();
+        Collection<CacheOperationContext> cachePutContexts = contexts.get(MatrixCachePutOperation.class);
+        Collection<CacheOperationContext> excluded = new ArrayList<>();
         for (CacheOperationContext context : cachePutContexts) {
             try {
                 if (!context.isConditionPassing(RESULT_UNAVAILABLE)) {
@@ -258,15 +262,79 @@ public class CacheInterceptor extends org.springframework.cache.interceptor.Cach
         return key;
     }
 
+
     @Override
-    public void setBeanFactory(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+    protected CacheOperationContext getOperationContext(CacheOperation operation, Method method, Object[] args, Object target, Class<?> targetClass) {
+        CacheOperationMetadata metadata = this.getCacheOperationMetadata(operation, method, targetClass);
+        return new CacheOperationContext(metadata, args, target);
     }
 
     @Override
-    public void afterSingletonsInstantiated() {
-        super.afterSingletonsInstantiated();
-        this.initialized = true;
+    protected CacheOperationMetadata getCacheOperationMetadata(CacheOperation operation, Method method, Class<?> targetClass) {
+        CacheOperationCacheKey cacheKey = new CacheOperationCacheKey(operation, method, targetClass);
+        CacheOperationMetadata metadata = this.metadataCache.get(cacheKey);
+        if (metadata == null) {
+            KeyGenerator operationKeyGenerator;
+            if (StringUtils.hasText(operation.getKeyGenerator())) {
+                operationKeyGenerator = this.getBean(operation.getKeyGenerator(), KeyGenerator.class);
+            } else {
+                operationKeyGenerator = this.getKeyGenerator();
+            }
+
+            Object operationCacheResolver;
+            if (StringUtils.hasText(operation.getCacheResolver())) {
+                operationCacheResolver = this.getBean(operation.getCacheResolver(), CacheResolver.class);
+            } else if (StringUtils.hasText(operation.getCacheManager())) {
+                CacheManager cacheManager = this.getBean(operation.getCacheManager(), CacheManager.class);
+                operationCacheResolver = new MatrixCacheResolver(cacheManager);
+            } else {
+                operationCacheResolver = this.getCacheResolver();
+                Assert.state(operationCacheResolver != null, "No CacheResolver/CacheManager set");
+            }
+
+            metadata = new CacheOperationMetadata(operation, method, targetClass, operationKeyGenerator, (CacheResolver) operationCacheResolver);
+            this.metadataCache.put(cacheKey, metadata);
+        }
+
+        return metadata;
+    }
+
+    private static final class CacheOperationCacheKey implements Comparable<CacheOperationCacheKey> {
+        private final CacheOperation cacheOperation;
+        private final AnnotatedElementKey methodCacheKey;
+
+        private CacheOperationCacheKey(CacheOperation cacheOperation, Method method, Class<?> targetClass) {
+            this.cacheOperation = cacheOperation;
+            this.methodCacheKey = new AnnotatedElementKey(method, targetClass);
+        }
+
+        public boolean equals(@Nullable Object other) {
+            if (this == other) {
+                return true;
+            } else if (!(other instanceof CacheOperationCacheKey)) {
+                return false;
+            } else {
+                CacheOperationCacheKey otherKey = (CacheOperationCacheKey) other;
+                return this.cacheOperation.equals(otherKey.cacheOperation) && this.methodCacheKey.equals(otherKey.methodCacheKey);
+            }
+        }
+
+        public int hashCode() {
+            return this.cacheOperation.hashCode() * 31 + this.methodCacheKey.hashCode();
+        }
+
+        public String toString() {
+            return this.cacheOperation + " on " + this.methodCacheKey;
+        }
+
+        public int compareTo(CacheOperationCacheKey other) {
+            int result = this.cacheOperation.getName().compareTo(other.cacheOperation.getName());
+            if (result == 0) {
+                result = this.methodCacheKey.compareTo(other.methodCacheKey);
+            }
+
+            return result;
+        }
     }
 
     private Class<?> getTargetClass(Object target) {
@@ -304,7 +372,7 @@ public class CacheInterceptor extends org.springframework.cache.interceptor.Cach
 
             this.contexts = new LinkedMultiValueMap<>(operations.size());
             for (CacheOperation op : operations) {
-                CacheOperationContext cacheOperationContext = (CacheOperationContext) getOperationContext(op, method, args, target, targetClass);
+                CacheOperationContext cacheOperationContext = getOperationContext(op, method, args, target, targetClass);
                 this.contexts.add(op.getClass(), cacheOperationContext);
             }
             this.sync = determineSyncFlag(method);
@@ -320,13 +388,13 @@ public class CacheInterceptor extends org.springframework.cache.interceptor.Cach
         }
 
         private boolean determineSyncFlag(Method method) {
-            List<CacheOperationContext> cacheOperationContexts = this.contexts.get(org.springframework.cache.interceptor.CacheableOperation.class);
+            List<CacheOperationContext> cacheOperationContexts = this.contexts.get(MatrixCacheableOperation.class);
             if (cacheOperationContexts == null) {  // no @Cacheable operation at all
                 return false;
             }
             boolean syncEnabled = false;
-            for (org.springframework.cache.interceptor.CacheAspectSupport.CacheOperationContext cacheOperationContext : cacheOperationContexts) {
-                if (((org.springframework.cache.interceptor.CacheableOperation) cacheOperationContext.getOperation()).isSync()) {
+            for (CacheOperationContext cacheOperationContext : cacheOperationContexts) {
+                if (((MatrixCacheableOperation) cacheOperationContext.getOperation()).isSync()) {
                     syncEnabled = true;
                     break;
                 }
@@ -340,8 +408,8 @@ public class CacheInterceptor extends org.springframework.cache.interceptor.Cach
                     throw new IllegalStateException(
                             "Only one @Cacheable(sync=true) entry is allowed on '" + method + "'");
                 }
-                CacheOperationContext cacheOperationContext = (CacheOperationContext) cacheOperationContexts.iterator().next();
-                org.springframework.cache.interceptor.CacheableOperation operation = (CacheableOperation) cacheOperationContext.getOperation();
+                CacheOperationContext cacheOperationContext = cacheOperationContexts.iterator().next();
+                MatrixCacheableOperation operation = (MatrixCacheableOperation) cacheOperationContext.getOperation();
                 if (cacheOperationContext.getCaches().size() > 1) {
                     throw new IllegalStateException(
                             "@Cacheable(sync=true) only allows a single cache on '" + operation + "'");

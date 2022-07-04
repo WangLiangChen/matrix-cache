@@ -12,13 +12,13 @@ import java.time.Duration;
 /**
  * @author LiangChen.Wang 2021/4/16
  */
-public class RedisCacheManager extends AbstractCacheManager {
+public class MatrixRedisCacheManager extends AbstractCacheManager {
     private final RedisCacheWriter cacheWriter;
     private final RedisCacheConfiguration cacheConfig;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final RedisCacheConfiguration defaultCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig();
 
-    public RedisCacheManager(RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object, Object> redisTemplate) {
+    public MatrixRedisCacheManager(RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object, Object> redisTemplate) {
         this.cacheWriter = cacheWriter;
         this.cacheConfig = cacheConfig;
         this.redisTemplate = redisTemplate;
@@ -33,6 +33,6 @@ public class RedisCacheManager extends AbstractCacheManager {
         if (!isAllowNullValues()) {
             localConfig = localConfig.disableCachingNullValues();
         }
-        return new RedisCache(name, cacheWriter, localConfig, redisTemplate);
+        return new MatrixRedisCache(name, cacheWriter, localConfig, redisTemplate);
     }
 }

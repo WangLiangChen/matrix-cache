@@ -5,19 +5,20 @@ import java.time.Duration;
 /**
  * @author LiangChen.Wang 2021/3/19
  */
-public class CacheableOperation extends org.springframework.cache.interceptor.CacheableOperation {
+class MatrixCachePutOperation extends org.springframework.cache.interceptor.CachePutOperation {
 
     private final Duration ttl;
 
-    public CacheableOperation(Builder builder) {
+    public MatrixCachePutOperation(Builder builder) {
         super(builder);
         this.ttl = builder.ttl;
     }
+
     public Duration getTtl() {
         return ttl;
     }
 
-    public static class Builder extends org.springframework.cache.interceptor.CacheableOperation.Builder {
+    public static class Builder extends org.springframework.cache.interceptor.CachePutOperation.Builder {
 
         private Duration ttl;
 
@@ -35,8 +36,8 @@ public class CacheableOperation extends org.springframework.cache.interceptor.Ca
         }
 
         @Override
-        public CacheableOperation build() {
-            return new CacheableOperation(this);
+        public MatrixCachePutOperation build() {
+            return new MatrixCachePutOperation(this);
         }
     }
 

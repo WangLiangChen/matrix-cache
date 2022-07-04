@@ -10,23 +10,20 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 import wang.liangchen.matrix.easycache.sdk.annotation.CachePut;
-import wang.liangchen.matrix.easycache.sdk.annotation.Caching;
 import wang.liangchen.matrix.easycache.sdk.annotation.Cacheable;
+import wang.liangchen.matrix.easycache.sdk.annotation.Caching;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author LiangChen.Wang 2021/3/18
  */
-public class SpringCacheAnnotationParser implements CacheAnnotationParser, Serializable {
+class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
     private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<Class<? extends Annotation>>() {{
         add(Cacheable.class);
@@ -79,7 +76,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         if (annotations.isEmpty()) {
             return null;
         }
-
+        removeSpringCacheAnnotation(annotations);
         final Collection<CacheOperation> operations = new ArrayList<>();
         annotations.parallelStream().forEach(annotation -> {
             if (annotation instanceof Cacheable) {
@@ -113,8 +110,32 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         return operations;
     }
 
-    private CacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable) {
-        CacheableOperation.Builder builder = new CacheableOperation.Builder();
+    private void removeSpringCacheAnnotation(Collection<? extends Annotation> annotations) {
+        // 如果存在自定义的注解，则覆盖原注解
+        boolean existCacheable = false, existCachePut = false;
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType() == Cacheable.class) {
+                existCacheable = true;
+            }
+            if (annotation.annotationType() == CachePut.class) {
+                existCachePut = true;
+            }
+        }
+        // 移除对应的Spring注解
+        Iterator<? extends Annotation> iterator = annotations.iterator();
+        while (iterator.hasNext()) {
+            Class<? extends Annotation> annotationType = iterator.next().annotationType();
+            if (existCacheable && annotationType == org.springframework.cache.annotation.Cacheable.class) {
+                iterator.remove();
+            }
+            if (existCachePut && annotationType == org.springframework.cache.annotation.CachePut.class) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private MatrixCacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable) {
+        MatrixCacheableOperation.Builder builder = new MatrixCacheableOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cacheable.cacheNames());
         builder.setCondition(cacheable.condition());
@@ -127,13 +148,13 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setTtl(Duration.ofMillis(cacheable.ttlMs()));
 
         defaultConfig.applyDefault(builder);
-        CacheableOperation op = builder.build();
+        MatrixCacheableOperation op = builder.build();
         validateCacheOperation(ae, op);
         return op;
     }
 
-    private CacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.Cacheable cacheable) {
-        CacheableOperation.Builder builder = new CacheableOperation.Builder();
+    private MatrixCacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.Cacheable cacheable) {
+        MatrixCacheableOperation.Builder builder = new MatrixCacheableOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cacheable.cacheNames());
         builder.setCondition(cacheable.condition());
@@ -146,7 +167,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setTtl(Duration.ZERO);
 
         defaultConfig.applyDefault(builder);
-        CacheableOperation op = builder.build();
+        MatrixCacheableOperation op = builder.build();
         validateCacheOperation(ae, op);
         return op;
     }
@@ -172,7 +193,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
     }
 
     private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, CachePut cachePut) {
-        CachePutOperation.Builder builder = new CachePutOperation.Builder();
+        MatrixCachePutOperation.Builder builder = new MatrixCachePutOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cachePut.cacheNames());
         builder.setCondition(cachePut.condition());
@@ -184,13 +205,13 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setTtl(Duration.ofMillis(cachePut.ttlMs()));
 
         defaultConfig.applyDefault(builder);
-        CachePutOperation op = builder.build();
+        MatrixCachePutOperation op = builder.build();
         validateCacheOperation(ae, op);
         return op;
     }
 
     private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.CachePut cachePut) {
-        CachePutOperation.Builder builder = new CachePutOperation.Builder();
+        MatrixCachePutOperation.Builder builder = new MatrixCachePutOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cachePut.cacheNames());
         builder.setCondition(cachePut.condition());
@@ -202,7 +223,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
         builder.setTtl(Duration.ZERO);
 
         defaultConfig.applyDefault(builder);
-        CachePutOperation op = builder.build();
+        MatrixCachePutOperation op = builder.build();
         validateCacheOperation(ae, op);
         return op;
     }
@@ -255,12 +276,12 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 
     @Override
     public boolean equals(@Nullable Object other) {
-        return (other instanceof SpringCacheAnnotationParser);
+        return (other instanceof MatrixCacheAnnotationParser);
     }
 
     @Override
     public int hashCode() {
-        return SpringCacheAnnotationParser.class.hashCode();
+        return MatrixCacheAnnotationParser.class.hashCode();
     }
 
 

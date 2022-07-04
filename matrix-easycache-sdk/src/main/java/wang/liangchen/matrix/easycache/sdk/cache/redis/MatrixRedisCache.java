@@ -1,33 +1,35 @@
-package wang.liangchen.matrix.easycache.sdk.cache.caffeine;
+package wang.liangchen.matrix.easycache.sdk.cache.redis;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheWriter;
+import org.springframework.data.redis.core.BoundSetOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
+ * 扩展补充spring的RedisCache
+ *
  * @author LiangChen.Wang
  */
-public class CaffeineCache extends org.springframework.cache.caffeine.CaffeineCache implements Cache {
-    private final static Logger logger = LoggerFactory.getLogger(CaffeineCache.class);
-    /**
-     * time to live - ttl
-     * time to idle - tti
-     */
+public class MatrixRedisCache extends org.springframework.data.redis.cache.RedisCache implements Cache {
+    private final static Logger logger = LoggerFactory.getLogger(MatrixRedisCache.class);
     private final Duration ttl;
-    private final Set<Object> keys = new HashSet<>();
+    private final BoundSetOperations<Object, Object> keys;
 
-    public CaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, Duration ttl) {
-        this(name, cache, true, ttl);
-    }
-
-    public CaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, boolean allowNullValues, Duration ttl) {
-        super(name, cache, allowNullValues);
-        this.ttl = ttl;
+    public MatrixRedisCache(String name, RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object,Object> redisTemplate) {
+        super(name, cacheWriter, cacheConfig);
+        this.ttl = cacheConfig.getTtl();
+        String keysKey = this.createCacheKey("keys");
+        this.keys = redisTemplate.boundSetOps(keysKey);
+        // 有key才能设置expire,所以先add一个
+        this.keys.add("");
+        this.keys.expire(ttl);
     }
 
     @Override
@@ -53,17 +55,18 @@ public class CaffeineCache extends org.springframework.cache.caffeine.CaffeineCa
     @Override
     public void clear() {
         super.clear();
-        keys.clear();
+        Set<Object> members = keys.members();
+        keys.remove(members.toArray());
     }
 
     @Override
     public Set<Object> keys() {
-        return this.keys;
+        return this.keys.members();
     }
 
     @Override
     public boolean containsKey(Object key) {
-        return this.keys.contains(key);
+        return keys.isMember(key);
     }
 
     @Override
@@ -73,7 +76,7 @@ public class CaffeineCache extends org.springframework.cache.caffeine.CaffeineCa
 
     @Override
     public String toString() {
-        return "CaffeineCache{" +
+        return "RedisCache{" +
                 "name='" + getName() + '\'' +
                 ", ttl=" + ttl +
                 ", allowNullValues=" + isAllowNullValues() +

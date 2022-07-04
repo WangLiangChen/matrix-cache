@@ -12,17 +12,17 @@ import java.time.Duration;
 /**
  * @author LiangChen.Wang 2021/4/15
  */
-public class CaffeineCacheManager extends AbstractCacheManager {
+public class MatrixCaffeineCacheManager extends AbstractCacheManager {
     private final Caffeine<Object, Object> cacheBuilder;
     @Nullable
     private final CacheLoader<Object, Object> cacheLoader;
 
-    public CaffeineCacheManager(Caffeine<Object, Object> cacheBuilder, @Nullable CacheLoader<Object, Object> cacheLoader) {
+    public MatrixCaffeineCacheManager(Caffeine<Object, Object> cacheBuilder, @Nullable CacheLoader<Object, Object> cacheLoader) {
         this.cacheBuilder = cacheBuilder;
         this.cacheLoader = cacheLoader;
     }
 
-    public CaffeineCacheManager(Caffeine<Object, Object> cacheBuilder) {
+    public MatrixCaffeineCacheManager(Caffeine<Object, Object> cacheBuilder) {
         this.cacheBuilder = cacheBuilder;
         this.cacheLoader = null;
     }
@@ -33,8 +33,8 @@ public class CaffeineCacheManager extends AbstractCacheManager {
         return caffeineCache(name, ttl);
     }
 
-    private CaffeineCache caffeineCache(String name, Duration ttl) {
-        return new CaffeineCache(name, nativeCache(name, ttl), isAllowNullValues(), ttl);
+    private MatrixCaffeineCache caffeineCache(String name, Duration ttl) {
+        return new MatrixCaffeineCache(name, nativeCache(name, ttl), isAllowNullValues(), ttl);
     }
 
     private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(String name, Duration ttl) {
