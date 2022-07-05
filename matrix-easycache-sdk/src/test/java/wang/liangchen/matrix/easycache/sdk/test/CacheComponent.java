@@ -5,10 +5,8 @@ import org.springframework.stereotype.Component;
 import wang.liangchen.matrix.easycache.sdk.annotation.Cacheable;
 
 @Component
+@org.springframework.cache.annotation.Cacheable("books")
 public class CacheComponent {
-
-    @Cacheable(cacheNames = "cacheable", ttlMs = 100000)
-    @org.springframework.cache.annotation.Cacheable(cacheNames = "springCacheable")
     public String cacheable() {
         return "1000";
     }

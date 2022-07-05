@@ -16,7 +16,7 @@ import java.time.Duration;
 /**
  * @author LiangChen.Wang 2020/9/23
  */
-public class CacheAutoConfiguration {
+class MatrixCachingConfiguration {
     @Bean
     @OverrideBean("cacheManager")
     public org.springframework.cache.CacheManager matrixCacheManager() {
