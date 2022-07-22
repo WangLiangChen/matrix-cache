@@ -1,22 +1,29 @@
 package wang.liangchen.matrix.easycache.sdk.cache.mlc;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.Nullable;
 import wang.liangchen.matrix.easycache.sdk.cache.AbstractCacheManager;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 import wang.liangchen.matrix.easycache.sdk.cache.CacheManager;
-import wang.liangchen.matrix.easycache.sdk.consistency.Message;
+import wang.liangchen.matrix.easycache.sdk.cache.redis.MatrixRedisCache;
+import wang.liangchen.matrix.easycache.sdk.consistency.CacheSynchronizer;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
  * @author LiangChen.Wang 2021/3/22
  */
 public class MultilevelCacheManager extends AbstractCacheManager {
     private final CacheManager localCacheManager, distributedCacheManager;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
-    public MultilevelCacheManager(CacheManager localCacheManager, CacheManager distributedCacheManager) {
+    public MultilevelCacheManager(CacheManager localCacheManager, CacheManager distributedCacheManager,
+                                  RedisTemplate<Object, Object> redisTemplate) {
         this.localCacheManager = localCacheManager;
         this.distributedCacheManager = distributedCacheManager;
+        this.redisTemplate = redisTemplate;
+        CacheSynchronizer.INSTANCE.init(this);
     }
 
     @Nullable
@@ -36,7 +43,21 @@ public class MultilevelCacheManager extends AbstractCacheManager {
         return distributedCacheManager.getCache(name, ttl);
     }
 
-    public void handleMessage(Message message) {
-        System.out.println("evict:" + message);
+    public RedisTemplate<Object, Object> getRedisTemplate() {
+        return redisTemplate;
+    }
+
+    public void handleMessage(Object message) {
+        CacheSynchronizer.INSTANCE.handleMessage();
+    }
+
+    public void handleEvictedKeys(List<Object> keys) {
+        keys.stream().map(Object::toString).forEach(key -> {
+            int index = key.indexOf(MatrixRedisCache.EVICT_MESSAGE_SPLITTER);
+            String name = key.substring(0, index);
+            key = key.substring(index + 1);
+            Cache cache = localCacheManager.getCache(name);
+            cache.evictIfPresent(key);
+        });
     }
 }

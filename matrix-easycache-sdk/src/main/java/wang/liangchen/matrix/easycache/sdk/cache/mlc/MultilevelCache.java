@@ -86,16 +86,6 @@ public class MultilevelCache implements Cache {
     }
 
     @Override
-    public void evictLocal(Object key) {
-        localCache.evict(key);
-    }
-
-    @Override
-    public void clearLocal() {
-        localCache.clear();
-    }
-
-    @Override
     public ValueWrapper putIfAbsent(Object key, Object value) {
         distributedCache.putIfAbsent(key, value);
         return localCache.putIfAbsent(key, value);

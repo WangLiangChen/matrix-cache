@@ -3,8 +3,8 @@ package wang.liangchen.matrix.easycache.sdk.spring.boot.starter.test;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.CacheManager;
-import wang.liangchen.matrix.easycache.sdk.cache.Cache;
+import org.springframework.cache.Cache;
+import wang.liangchen.matrix.easycache.sdk.cache.CacheManager;
 import wang.liangchen.matrix.easycache.sdk.override.EnableEasyCaching;
 
 import java.time.Duration;
@@ -21,10 +21,9 @@ public class CacheTest {
 
     @Test
     public void cache() throws InterruptedException {
-        wang.liangchen.matrix.easycache.sdk.cache.CacheManager cacheManager1 = (wang.liangchen.matrix.easycache.sdk.cache.CacheManager) cacheManager;
-        Cache c = cacheManager1.getCache("wanglc", Duration.ofMinutes(10));
-        c.put("name","hello");
-        c.clear();
-        TimeUnit.SECONDS.sleep(5);
+        Cache cache = cacheManager.getCache("TestCache", Duration.ofMinutes(1));
+        cache.put("name", "wanglc");
+        cache.evict("name");
+        TimeUnit.SECONDS.sleep(15);
     }
 }

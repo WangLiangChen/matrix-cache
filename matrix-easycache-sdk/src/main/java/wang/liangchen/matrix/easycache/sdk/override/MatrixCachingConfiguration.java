@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Role;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.util.StringUtils;
@@ -38,10 +39,10 @@ class MatrixCachingConfiguration {
         MatrixCaffeineCacheManager localCacheManager = createLocalCacheManager(cacheProperties, caffeineCacheLoader);
         RedisTemplate<Object, Object> redisTemplateIfAvailable = redisTemplate.getIfAvailable();
         if (null == redisTemplateIfAvailable) {
-            return new MultilevelCacheManager(localCacheManager, null);
+            return new MultilevelCacheManager(localCacheManager, null, null);
         }
         MatrixRedisCacheManager distributedCacheManager = createDistributedCacheManager(cacheProperties, redisTemplateIfAvailable);
-        return new MultilevelCacheManager(localCacheManager, distributedCacheManager);
+        return new MultilevelCacheManager(localCacheManager, distributedCacheManager, redisTemplateIfAvailable);
     }
 
     @Bean
@@ -51,7 +52,7 @@ class MatrixCachingConfiguration {
         container.setConnectionFactory(redisConnectionFactory);
         MessageListenerAdapter listener = new MessageListenerAdapter(multilevelCacheManager);
         listener.afterPropertiesSet();
-        container.addMessageListener(listener, MatrixRedisCache.EVICT_MESSAGE_TOPIC);
+        container.addMessageListener(listener, new ChannelTopic(MatrixRedisCache.EVICT_MESSAGE_TOPIC));
         return container;
     }
 
