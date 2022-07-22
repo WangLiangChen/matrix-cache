@@ -18,8 +18,8 @@ public class MatrixRedisCacheManager extends AbstractCacheManager {
     private final RedisTemplate<Object, Object> redisTemplate;
     private final RedisCacheConfiguration defaultCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig();
 
-    public MatrixRedisCacheManager(RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object, Object> redisTemplate) {
-        this.cacheWriter = cacheWriter;
+    public MatrixRedisCacheManager(RedisCacheConfiguration cacheConfig, RedisTemplate<Object, Object> redisTemplate) {
+        this.cacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(redisTemplate.getConnectionFactory());
         this.cacheConfig = cacheConfig;
         this.redisTemplate = redisTemplate;
     }
@@ -27,7 +27,7 @@ public class MatrixRedisCacheManager extends AbstractCacheManager {
     @Override
     protected Cache getMissingCache(String name, Duration ttl) {
         RedisCacheConfiguration localConfig = cacheConfig == null ? defaultCacheConfiguration : cacheConfig;
-        if (ttl.compareTo(Duration.ZERO) > 0) {
+        if (Duration.ZERO.compareTo(ttl) < 0) {
             localConfig = localConfig.entryTtl(ttl);
         }
         if (!isAllowNullValues()) {
@@ -35,4 +35,5 @@ public class MatrixRedisCacheManager extends AbstractCacheManager {
         }
         return new MatrixRedisCache(name, cacheWriter, localConfig, redisTemplate);
     }
+
 }

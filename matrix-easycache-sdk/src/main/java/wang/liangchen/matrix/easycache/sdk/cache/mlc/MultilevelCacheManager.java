@@ -4,6 +4,7 @@ import org.springframework.lang.Nullable;
 import wang.liangchen.matrix.easycache.sdk.cache.AbstractCacheManager;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 import wang.liangchen.matrix.easycache.sdk.cache.CacheManager;
+import wang.liangchen.matrix.easycache.sdk.consistency.Message;
 
 import java.time.Duration;
 
@@ -16,7 +17,6 @@ public class MultilevelCacheManager extends AbstractCacheManager {
     public MultilevelCacheManager(CacheManager localCacheManager, CacheManager distributedCacheManager) {
         this.localCacheManager = localCacheManager;
         this.distributedCacheManager = distributedCacheManager;
-
     }
 
     @Nullable
@@ -30,6 +30,13 @@ public class MultilevelCacheManager extends AbstractCacheManager {
     }
 
     public Cache getDistributedCache(String name, Duration ttl) {
+        if (null == distributedCacheManager) {
+            return null;
+        }
         return distributedCacheManager.getCache(name, ttl);
+    }
+
+    public void handleMessage(Message message) {
+        System.out.println("evict:" + message);
     }
 }

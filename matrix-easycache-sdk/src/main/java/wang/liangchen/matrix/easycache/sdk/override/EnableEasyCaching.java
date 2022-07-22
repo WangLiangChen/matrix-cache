@@ -1,16 +1,10 @@
 package wang.liangchen.matrix.easycache.sdk.override;
 
-import org.springframework.cache.annotation.CachingConfigurationSelector;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.annotation.ProxyCachingConfiguration;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.StringUtils;
 
 import java.lang.annotation.*;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Liangchen.Wang 2022-07-05 8:13
@@ -18,8 +12,8 @@ import java.util.List;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(EnableMatrixCaching.MatrixCacheImportSelector.class)
-public @interface EnableMatrixCaching {
+@Import(EnableEasyCaching.MatrixCacheImportSelector.class)
+public @interface EnableEasyCaching {
     class MatrixCacheImportSelector implements ImportSelector {
 
         @Override

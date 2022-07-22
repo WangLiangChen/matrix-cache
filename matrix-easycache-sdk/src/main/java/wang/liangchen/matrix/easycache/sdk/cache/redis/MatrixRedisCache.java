@@ -4,9 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheWriter;
+import org.springframework.data.redis.core.BoundListOperations;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
+import wang.liangchen.matrix.easycache.sdk.consistency.CacheEvictMessage;
 
 import java.time.Duration;
 import java.util.Set;
@@ -19,17 +22,29 @@ import java.util.concurrent.Callable;
  */
 public class MatrixRedisCache extends org.springframework.data.redis.cache.RedisCache implements Cache {
     private final static Logger logger = LoggerFactory.getLogger(MatrixRedisCache.class);
+    public static final ChannelTopic EVICT_MESSAGE_TOPIC = new ChannelTopic("MatrixCacheEvictMessage");
     private final Duration ttl;
+    private final RedisTemplate<Object, Object> redisTemplate;
+    private final String keysKey;
     private final BoundSetOperations<Object, Object> keys;
+    private final String evictQueueKey;
+    private final BoundListOperations<Object, Object> evictQueue;
 
-    public MatrixRedisCache(String name, RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object,Object> redisTemplate) {
+    public MatrixRedisCache(String name, RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object, Object> redisTemplate) {
         super(name, cacheWriter, cacheConfig);
         this.ttl = cacheConfig.getTtl();
-        String keysKey = this.createCacheKey("keys");
+        this.redisTemplate = redisTemplate;
+
+        this.keysKey = this.createCacheKey("keys");
         this.keys = redisTemplate.boundSetOps(keysKey);
         // 有key才能设置expire,所以先add一个
         this.keys.add("");
         this.keys.expire(ttl);
+
+        this.evictQueueKey = this.createCacheKey("evictQueue");
+        this.evictQueue = redisTemplate.boundListOps(evictQueueKey);
+        this.evictQueue.leftPush("");
+        this.evictQueue.expire(ttl);
     }
 
     @Override
@@ -50,13 +65,18 @@ public class MatrixRedisCache extends org.springframework.data.redis.cache.Redis
     public void evict(Object key) {
         super.evict(key);
         keys.remove(key);
+        // 发送缓存删除消息
+        redisTemplate.convertAndSend(EVICT_MESSAGE_TOPIC.getTopic(), CacheEvictMessage.newInstance(this.getName(), CacheEvictMessage.Action.evict, key));
     }
 
     @Override
     public void clear() {
         super.clear();
-        Set<Object> members = keys.members();
-        keys.remove(members.toArray());
+        redisTemplate.delete(this.keysKey);
+        redisTemplate.delete(this.evictQueueKey);
+        // 发送缓存删除消息
+        redisTemplate.convertAndSend(EVICT_MESSAGE_TOPIC.getTopic(), CacheEvictMessage.newInstance(this.getName(), CacheEvictMessage.Action.clear));
+
     }
 
     @Override

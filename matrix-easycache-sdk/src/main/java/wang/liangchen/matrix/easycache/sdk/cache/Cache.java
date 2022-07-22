@@ -8,6 +8,14 @@ import java.util.Set;
  */
 public interface Cache extends org.springframework.cache.Cache {
 
+    default void evictLocal(Object key) {
+
+    }
+
+    default void clearLocal() {
+
+    }
+
     Set<Object> keys();
 
     boolean containsKey(Object key);

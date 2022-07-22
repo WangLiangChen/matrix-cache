@@ -10,6 +10,7 @@
 
     <modules>
         <module>matrix-easycache-sdk</module>
+        <module>matrix-easycache-sdk-spring-boot-starter</module>
     </modules>
 
     <name>${project.artifactId}</name>

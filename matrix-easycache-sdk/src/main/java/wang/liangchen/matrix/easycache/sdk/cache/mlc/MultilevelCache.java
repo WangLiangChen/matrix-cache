@@ -77,22 +77,20 @@ public class MultilevelCache implements Cache {
     public void evict(Object key) {
         distributedCache.evict(key);
         localCache.evict(key);
-        // 通过redis发送消息
-        // multilevelCacheManager.sendCacheMessage(CacheMessage.newInstance(this.name, CacheMessage.Action.evict, key));
     }
 
     @Override
     public void clear() {
         distributedCache.clear();
         localCache.clear();
-        // 发送消息
-        // multilevelCacheManager.sendCacheMessage(CacheMessage.newInstance(this.name, CacheMessage.Action.clear));
     }
 
+    @Override
     public void evictLocal(Object key) {
         localCache.evict(key);
     }
 
+    @Override
     public void clearLocal() {
         localCache.clear();
     }

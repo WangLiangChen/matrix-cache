@@ -1,9 +1,8 @@
-package wang.liangchen.matrix.easycache.sdk;
+package wang.liangchen.matrix.easycache.sdk.spring.boot.starter;
+
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cache.annotation.EnableCaching;
-import wang.liangchen.matrix.easycache.sdk.override.EnableMatrixCaching;
 
 /**
  * @author LiangChen.Wang

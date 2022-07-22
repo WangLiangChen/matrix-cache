@@ -3,7 +3,7 @@ package wang.liangchen.matrix.easycache.sdk.cache.caffeine;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import org.springframework.lang.Nullable;
+import com.github.benmanes.caffeine.cache.CaffeineSpec;
 import wang.liangchen.matrix.easycache.sdk.cache.AbstractCacheManager;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 
@@ -13,20 +13,16 @@ import java.time.Duration;
  * @author LiangChen.Wang 2021/4/15
  */
 public class MatrixCaffeineCacheManager extends AbstractCacheManager {
-    private final Caffeine<Object, Object> cacheBuilder;
-    @Nullable
-    private final CacheLoader<Object, Object> cacheLoader;
+    private CacheLoader<Object, Object> cacheLoader;
+    private CaffeineSpec caffeineSpec;
 
-    public MatrixCaffeineCacheManager(Caffeine<Object, Object> cacheBuilder, @Nullable CacheLoader<Object, Object> cacheLoader) {
-        this.cacheBuilder = cacheBuilder;
+    public void setCacheLoader(CacheLoader<Object, Object> cacheLoader) {
         this.cacheLoader = cacheLoader;
     }
 
-    public MatrixCaffeineCacheManager(Caffeine<Object, Object> cacheBuilder) {
-        this.cacheBuilder = cacheBuilder;
-        this.cacheLoader = null;
+    public void setCacheSpecification(String specification) {
+        this.caffeineSpec = CaffeineSpec.parse(specification);
     }
-
 
     @Override
     protected Cache getMissingCache(String name, Duration ttl) {
@@ -34,15 +30,15 @@ public class MatrixCaffeineCacheManager extends AbstractCacheManager {
     }
 
     private MatrixCaffeineCache caffeineCache(String name, Duration ttl) {
-        return new MatrixCaffeineCache(name, nativeCache(name, ttl), isAllowNullValues(), ttl);
+        return new MatrixCaffeineCache(name, nativeCache(ttl), isAllowNullValues(), ttl);
     }
 
-    private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(String name, Duration ttl) {
-        Caffeine<Object, Object> innerCacheBuilder = this.cacheBuilder;
+    private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(Duration ttl) {
+        Caffeine<Object, Object> cacheBuilder = null == this.caffeineSpec ? Caffeine.newBuilder() : Caffeine.from(caffeineSpec);
         if (Duration.ZERO.compareTo(ttl) < 0) {
-            innerCacheBuilder = Caffeine.newBuilder();
-            innerCacheBuilder.expireAfterWrite(ttl);
+            cacheBuilder.expireAfterWrite(ttl);
         }
-        return (this.cacheLoader != null ? innerCacheBuilder.build(this.cacheLoader) : innerCacheBuilder.build());
+        return (this.cacheLoader != null ? cacheBuilder.build(this.cacheLoader) : cacheBuilder.build());
     }
+
 }

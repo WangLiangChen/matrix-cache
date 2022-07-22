@@ -5,15 +5,11 @@ import org.springframework.lang.Nullable;
 
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public abstract class AbstractCacheManager implements CacheManager {
-    private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(16);
-    private Collection<String> cacheNames = Collections.emptySet();
+    private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(32);
     private boolean allowNullValues = true;
 
     @Override
@@ -28,15 +24,12 @@ public abstract class AbstractCacheManager implements CacheManager {
         if (cache != null) {
             return cache;
         }
-        return this.cacheMap.computeIfAbsent(name, cacheName -> {
-            updateCacheNames(name);
-            return decorateCache(getMissingCache(name, ttl));
-        });
+        return this.cacheMap.computeIfAbsent(name, cacheName -> decorateCache(getMissingCache(name, ttl)));
     }
 
     @Override
     public Collection<String> getCacheNames() {
-        return this.cacheNames;
+        return this.cacheMap.keySet();
     }
 
     @Nullable
@@ -44,20 +37,13 @@ public abstract class AbstractCacheManager implements CacheManager {
         return this.cacheMap.get(name);
     }
 
-    private void updateCacheNames(String name) {
-        Set<String> cacheNames = new LinkedHashSet<>(this.cacheNames);
-        cacheNames.add(name);
-        this.cacheNames = Collections.unmodifiableSet(cacheNames);
-    }
 
     protected Cache decorateCache(Cache cache) {
         return cache;
     }
 
     @Nullable
-    protected Cache getMissingCache(String name, Duration ttl) {
-        return null;
-    }
+    protected abstract Cache getMissingCache(String name, Duration ttl);
 
     public boolean isAllowNullValues() {
         return allowNullValues;
