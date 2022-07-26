@@ -3,19 +3,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>wang.liangchen.matrix.easycache</groupId>
-    <artifactId>matrix-easycache</artifactId>
+    <groupId>wang.liangchen.matrix.cache</groupId>
+    <artifactId>matrix-cache</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>matrix-easycache-sdk</module>
-        <module>matrix-easycache-sdk-spring-boot-starter</module>
+        <module>matrix-cache-sdk</module>
+        <module>matrix-cache-sdk-spring-boot-starter</module>
     </modules>
 
     <name>${project.artifactId}</name>
-    <description>easycache is a Multilevel cache</description>
-    <url>https://github.com/WangLiangChen/matrix-easycache</url>
+    <description>cache is a Multilevel cache</description>
+    <url>https://github.com/WangLiangChen/matrix-cache</url>
 
     <licenses>
         <license>
@@ -25,9 +25,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/WangLiangChen/matrix-easycache.git</connection>
-        <developerConnection>scm:git:ssh://github.com/WangLiangChen/matrix-easycache.git</developerConnection>
-        <url>https://github.com/WangLiangChen/matrix-easycache</url>
+        <connection>scm:git:git://github.com/WangLiangChen/matrix-cache.git</connection>
+        <developerConnection>scm:git:ssh://github.com/WangLiangChen/matrix-cache.git</developerConnection>
+        <url>https://github.com/WangLiangChen/matrix-cache</url>
     </scm>
 
     <developers>
