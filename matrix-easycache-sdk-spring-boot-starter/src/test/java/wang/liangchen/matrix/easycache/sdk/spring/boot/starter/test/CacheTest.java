@@ -8,6 +8,7 @@ import wang.liangchen.matrix.easycache.sdk.cache.CacheManager;
 import wang.liangchen.matrix.easycache.sdk.override.EnableEasyCaching;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Liangchen.Wang 2022-07-22 12:19
@@ -24,7 +25,10 @@ public class CacheTest {
         cache.evict("name_1");
         cache.evict("name_2");
         cache.evict("name_3");
+        cache.clear();
         cache.evict("name_4");
         cache.evict("name_5");
+        cache.evict("name_6");
+        TimeUnit.MINUTES.sleep(3);
     }
 }

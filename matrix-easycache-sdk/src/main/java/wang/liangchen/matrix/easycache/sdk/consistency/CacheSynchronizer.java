@@ -6,10 +6,9 @@ import org.springframework.data.redis.core.BoundListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import wang.liangchen.matrix.easycache.sdk.cache.mlc.MultilevelCacheManager;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,7 +21,7 @@ public enum CacheSynchronizer {
     INSTANCE;
     private final Logger logger = LoggerFactory.getLogger(CacheSynchronizer.class);
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
-    private final DateTimeFormatter evictQueueKeyFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private final DateTimeFormatter EVICT_QUEUE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private MultilevelCacheManager multilevelCacheManager;
     private RedisTemplate<Object, Object> redisTemplate;
@@ -32,11 +31,9 @@ public enum CacheSynchronizer {
     public static final String EVICT_MESSAGE_SPLITTER = "-|-";
 
     private Long previousOffset;
-    private String previousEvictQueueKey;
     private BoundListOperations<Object, Object> previousEvictQueue;
 
     private Long offset;
-    private String evictQueueKey;
     private BoundListOperations<Object, Object> evictQueue;
 
     private long pullTimestamp;
@@ -62,6 +59,7 @@ public enum CacheSynchronizer {
     }
 
     public void sendMessage(String name, String key) {
+        logger.debug("send message,name:{}, key:{}", name, key);
         // 写入队列
         if (null == key) {
             evictQueue.rightPush(name);
@@ -73,56 +71,59 @@ public enum CacheSynchronizer {
     }
 
     public void handleMessage() {
-        logger.debug("receive Pub/Sub message");
+        logger.debug("Receive Pub/Sub message");
         pullMessage();
         pushTimestamp = System.currentTimeMillis();
     }
 
     private void initQueue() {
-        this.evictQueueKey = LocalDateTime.now().format(evictQueueKeyFormatter);
-        this.evictQueue = this.redisTemplate.boundListOps(this.evictQueueKey);
+        String evictQueueKey = LocalDateTime.now().format(EVICT_QUEUE_KEY_FORMATTER);
+        this.evictQueue = this.redisTemplate.boundListOps(evictQueueKey);
         this.offset = this.evictQueue.size();
-        logger.debug("inited offset:{}", offset);
+        logger.debug("inited evictQueueKey:{}, offset:{}", evictQueueKey, offset);
+
     }
 
     private synchronized void pullMessage() {
-        String dateKey = LocalDateTime.now().format(evictQueueKeyFormatter);
-        logger.debug("evictQueueKey:{}, dateKey:{}", this.evictQueueKey, dateKey);
+        String dateKey = LocalDateTime.now().format(EVICT_QUEUE_KEY_FORMATTER);
+        String evictQueueKey = this.evictQueue.getKey().toString();
+        logger.debug("evictQueueKey:{}, dateKey:{}", evictQueueKey, dateKey);
         // 切换队列
         if (!dateKey.equals(evictQueueKey)) {
-            logger.debug("switch queue from:{} to:{}", this.evictQueueKey, dateKey);
-            this.previousEvictQueueKey = this.evictQueueKey;
+            logger.debug("switch queue from:{} to:{}", evictQueueKey, dateKey);
             this.previousEvictQueue = this.evictQueue;
             this.previousOffset = this.offset;
-            this.evictQueueKey = dateKey;
-            this.evictQueue = this.redisTemplate.boundListOps(dateKey);
+            evictQueueKey = dateKey;
+            this.evictQueue = this.redisTemplate.boundListOps(evictQueueKey);
             this.offset = 0L;
         }
         // 继续拉取上一个队列
         if (null != this.previousEvictQueue) {
+            String previousEvictQueueKey = this.previousEvictQueue.getKey().toString();
             Long size = this.previousEvictQueue.size();
-            logger.debug("pull from previousEvictQueue, offset:{}, size:{}", this.previousOffset, size);
+            logger.debug("pull from previousEvictQueue, key:{}, offset:{}, size:{}", previousEvictQueueKey, this.previousOffset, size);
             if (size > this.previousOffset) {
-                List<Object> keys = this.previousEvictQueue.range(offset, size-1);
-                logger.debug("pulled from previousEvictQueue, messages:{}", keys.toString());
+                List<Object> keys = this.previousEvictQueue.range(previousOffset, size - 1);
+                logger.debug("pulled from previousEvictQueue, key:{}, messages:{}", previousEvictQueueKey, keys.toString());
                 multilevelCacheManager.handleEvictedKeys(keys);
                 previousOffset = size;
             }
             // 拉取延时20S后,删除上一个队列
-            Instant instant = Instant.parse(this.evictQueueKey);
-            if (ChronoUnit.SECONDS.between(instant, Instant.now()) > 20) {
-                this.redisTemplate.delete(this.previousEvictQueueKey);
-                this.previousEvictQueueKey = null;
+            LocalDateTime zero = LocalDate.parse(evictQueueKey, EVICT_QUEUE_KEY_FORMATTER).atStartOfDay();
+            zero = zero.plusSeconds(20);
+            if (LocalDateTime.now().isAfter(zero)) {
+                logger.debug("delete and reset previousEvictQueue, key:{}", previousEvictQueueKey);
+                this.redisTemplate.delete(previousEvictQueueKey);
                 this.previousEvictQueue = null;
                 this.previousOffset = null;
             }
         }
         // 拉取当前队列
         Long size = this.evictQueue.size();
-        logger.debug("pull from evictQueue, offset:{}, size:{}", this.offset, size);
+        logger.debug("pull from evictQueue, key:{}, offset:{}, size:{}", evictQueueKey, this.offset, size);
         if (size > this.offset) {
-            List<Object> keys = this.evictQueue.range(offset, size-1);
-            logger.debug("pulled from evictQueue, messages:{}", keys.toString());
+            List<Object> keys = this.evictQueue.range(offset, size - 1);
+            logger.debug("pulled from evictQueue, key:{}, messages:{}", evictQueueKey, keys.toString());
             multilevelCacheManager.handleEvictedKeys(keys);
             this.offset = size;
         }
