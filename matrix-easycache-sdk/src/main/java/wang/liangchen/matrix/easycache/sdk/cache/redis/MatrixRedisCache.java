@@ -4,10 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheWriter;
-import org.springframework.data.redis.core.BoundListOperations;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
+import wang.liangchen.matrix.easycache.sdk.consistency.CacheSynchronizer;
 
 import java.time.Duration;
 import java.util.Set;
@@ -20,14 +20,12 @@ import java.util.concurrent.Callable;
  */
 public class MatrixRedisCache extends org.springframework.data.redis.cache.RedisCache implements Cache {
     private final static Logger logger = LoggerFactory.getLogger(MatrixRedisCache.class);
-    public static final String EVICT_MESSAGE_TOPIC = "MatrixCacheEvictMessage";
     private final String EMPTY_STRING = "";
-    public static final String EVICT_MESSAGE_SPLITTER = "\\";
     private final Duration ttl;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final String keysKey;
     private final BoundSetOperations<Object, Object> keys;
-    private final BoundListOperations<Object, Object> evictQueue;
+
 
     public MatrixRedisCache(String name, RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object, Object> redisTemplate) {
         super(name, cacheWriter, cacheConfig);
@@ -39,8 +37,6 @@ public class MatrixRedisCache extends org.springframework.data.redis.cache.Redis
         // 有key才能设置expire,所以先add一个
         this.keys.add(EMPTY_STRING);
         this.keys.expire(ttl);
-
-        this.evictQueue = redisTemplate.boundListOps(EVICT_MESSAGE_TOPIC);
     }
 
     @Override
@@ -62,15 +58,13 @@ public class MatrixRedisCache extends org.springframework.data.redis.cache.Redis
         super.evict(key);
         keys.remove(key);
         // add to evict queue
-        evictQueue.rightPush(String.format("%s%s%s", getName(), EVICT_MESSAGE_SPLITTER, key));
-        redisTemplate.convertAndSend(EVICT_MESSAGE_TOPIC, EMPTY_STRING);
+        CacheSynchronizer.INSTANCE.sendMessage(this.getName(), key.toString());
     }
 
     @Override
     public void clear() {
         super.clear();
-        redisTemplate.delete(this.keysKey);
-        redisTemplate.convertAndSend(EVICT_MESSAGE_TOPIC, EMPTY_STRING);
+        CacheSynchronizer.INSTANCE.sendMessage(this.getName());
     }
 
     @Override

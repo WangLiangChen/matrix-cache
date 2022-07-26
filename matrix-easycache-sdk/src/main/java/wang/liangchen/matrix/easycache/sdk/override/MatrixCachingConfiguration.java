@@ -22,8 +22,8 @@ import org.springframework.util.StringUtils;
 import wang.liangchen.matrix.easycache.sdk.annotation.OverrideBean;
 import wang.liangchen.matrix.easycache.sdk.cache.caffeine.MatrixCaffeineCacheManager;
 import wang.liangchen.matrix.easycache.sdk.cache.mlc.MultilevelCacheManager;
-import wang.liangchen.matrix.easycache.sdk.cache.redis.MatrixRedisCache;
 import wang.liangchen.matrix.easycache.sdk.cache.redis.MatrixRedisCacheManager;
+import wang.liangchen.matrix.easycache.sdk.consistency.CacheSynchronizer;
 
 /**
  * @author LiangChen.Wang 2020/9/23
@@ -52,7 +52,7 @@ class MatrixCachingConfiguration {
         container.setConnectionFactory(redisConnectionFactory);
         MessageListenerAdapter listener = new MessageListenerAdapter(multilevelCacheManager);
         listener.afterPropertiesSet();
-        container.addMessageListener(listener, new ChannelTopic(MatrixRedisCache.EVICT_MESSAGE_TOPIC));
+        container.addMessageListener(listener, new ChannelTopic(CacheSynchronizer.EVICT_MESSAGE_TOPIC));
         return container;
     }
 

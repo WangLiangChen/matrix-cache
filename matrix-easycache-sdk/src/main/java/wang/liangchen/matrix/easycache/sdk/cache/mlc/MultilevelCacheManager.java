@@ -5,7 +5,6 @@ import org.springframework.lang.Nullable;
 import wang.liangchen.matrix.easycache.sdk.cache.AbstractCacheManager;
 import wang.liangchen.matrix.easycache.sdk.cache.Cache;
 import wang.liangchen.matrix.easycache.sdk.cache.CacheManager;
-import wang.liangchen.matrix.easycache.sdk.cache.redis.MatrixRedisCache;
 import wang.liangchen.matrix.easycache.sdk.consistency.CacheSynchronizer;
 
 import java.time.Duration;
@@ -53,11 +52,7 @@ public class MultilevelCacheManager extends AbstractCacheManager {
 
     public void handleEvictedKeys(List<Object> keys) {
         keys.stream().map(Object::toString).forEach(key -> {
-            int index = key.indexOf(MatrixRedisCache.EVICT_MESSAGE_SPLITTER);
-            String name = key.substring(0, index);
-            key = key.substring(index + 1);
-            Cache cache = localCacheManager.getCache(name);
-            cache.evictIfPresent(key);
+            int index = key.indexOf(CacheSynchronizer.EVICT_MESSAGE_SPLITTER);
         });
     }
 }
