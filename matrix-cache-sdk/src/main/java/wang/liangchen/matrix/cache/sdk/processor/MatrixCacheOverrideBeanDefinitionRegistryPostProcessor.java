@@ -14,8 +14,9 @@ import org.springframework.stereotype.Component;
 import wang.liangchen.matrix.cache.sdk.annotation.OverrideBean;
 
 @Component
-public class OverrideBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
-    private static final Logger logger = LoggerFactory.getLogger(OverrideBeanDefinitionRegistryPostProcessor.class);
+public class MatrixCacheOverrideBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
+    private static final Logger logger = LoggerFactory.getLogger(MatrixCacheOverrideBeanDefinitionRegistryPostProcessor.class);
+
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
         String[] beanDefinitionNames = registry.getBeanDefinitionNames();
@@ -34,11 +35,10 @@ public class OverrideBeanDefinitionRegistryPostProcessor implements BeanDefiniti
             }
             MergedAnnotation<OverrideBean> overrideBeanAnnotation = methodMetadata.getAnnotations().get(OverrideBean.class);
             String specifiedBeanName = overrideBeanAnnotation.getString("value");
-            if (!registry.containsBeanDefinition(specifiedBeanName)) {
-                continue;
+            if (registry.containsBeanDefinition(specifiedBeanName)) {
+                // 移除被替换的Bean
+                registry.removeBeanDefinition(specifiedBeanName);
             }
-            // 移除被替换的Bean
-            registry.removeBeanDefinition(specifiedBeanName);
             // 移除自己
             registry.removeBeanDefinition(beanDefinitionName);
             // 用指定的名称重新注册自己

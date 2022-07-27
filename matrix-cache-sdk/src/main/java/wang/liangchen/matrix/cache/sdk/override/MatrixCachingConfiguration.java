@@ -49,11 +49,11 @@ class MatrixCachingConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(MultilevelCacheManager.class)
+    @ConditionalOnBean(value = {RedisConnectionFactory.class, MultilevelCacheManager.class})
     public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory redisConnectionFactory, MultilevelCacheManager multilevelCacheManager) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(redisConnectionFactory);
-        container.setTaskExecutor(Executors.newFixedThreadPool(16,new CustomizableThreadFactory("mx-listener-")));
+        container.setTaskExecutor(Executors.newFixedThreadPool(16, new CustomizableThreadFactory("mx-listener-")));
         MessageListenerAdapter listener = new MessageListenerAdapter(multilevelCacheManager);
         listener.afterPropertiesSet();
         container.addMessageListener(listener, new ChannelTopic(CacheSynchronizer.EVICT_MESSAGE_TOPIC));
