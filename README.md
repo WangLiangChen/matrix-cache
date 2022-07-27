@@ -1,2 +1,2 @@
-# matrix-mcache
+# matrix-cache
 A transparent multilevel cache framework 

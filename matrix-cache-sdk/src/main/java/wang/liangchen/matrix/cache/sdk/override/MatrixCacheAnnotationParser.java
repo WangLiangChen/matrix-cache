@@ -1,17 +1,12 @@
 package wang.liangchen.matrix.cache.sdk.override;
 
-import org.springframework.cache.annotation.CacheAnnotationParser;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.*;
 import org.springframework.cache.interceptor.CacheEvictOperation;
 import org.springframework.cache.interceptor.CacheOperation;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
-import wang.liangchen.matrix.cache.sdk.annotation.CachePut;
-import wang.liangchen.matrix.cache.sdk.annotation.Cacheable;
-import wang.liangchen.matrix.cache.sdk.annotation.Caching;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -26,13 +21,14 @@ import java.util.*;
 class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
     private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<Class<? extends Annotation>>() {{
+        add(wang.liangchen.matrix.cache.sdk.annotation.Cacheable.class);
         add(Cacheable.class);
-        add(org.springframework.cache.annotation.Cacheable.class);
+        add(wang.liangchen.matrix.cache.sdk.annotation.CacheEvict.class);
         add(CacheEvict.class);
+        add(wang.liangchen.matrix.cache.sdk.annotation.CachePut.class);
         add(CachePut.class);
-        add(org.springframework.cache.annotation.CachePut.class);
+        add(wang.liangchen.matrix.cache.sdk.annotation.Caching.class);
         add(Caching.class);
-        add(org.springframework.cache.annotation.Caching.class);
     }};
 
 
@@ -79,32 +75,36 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         removeSpringCacheAnnotation(annotations);
         final Collection<CacheOperation> operations = new ArrayList<>();
         annotations.parallelStream().forEach(annotation -> {
+            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.Cacheable) {
+                operations.add(parseMatrixCacheableAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.Cacheable) annotation));
+                return;
+            }
             if (annotation instanceof Cacheable) {
                 operations.add(parseCacheableAnnotation(annotatedElement, cachingConfig, (Cacheable) annotation));
                 return;
             }
-            if (annotation instanceof org.springframework.cache.annotation.Cacheable) {
-                operations.add(parseCacheableAnnotation(annotatedElement, cachingConfig, (org.springframework.cache.annotation.Cacheable) annotation));
+            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.CachePut) {
+                operations.add(parseMatrixPutAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.CachePut) annotation));
                 return;
             }
             if (annotation instanceof CachePut) {
                 operations.add(parsePutAnnotation(annotatedElement, cachingConfig, (CachePut) annotation));
                 return;
             }
-            if (annotation instanceof org.springframework.cache.annotation.CachePut) {
-                operations.add(parsePutAnnotation(annotatedElement, cachingConfig, (org.springframework.cache.annotation.CachePut) annotation));
+            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.CacheEvict) {
+                operations.add(parseMatrixEvictAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.CacheEvict) annotation));
                 return;
             }
             if (annotation instanceof CacheEvict) {
                 operations.add(parseEvictAnnotation(annotatedElement, cachingConfig, (CacheEvict) annotation));
                 return;
             }
-            if (annotation instanceof Caching) {
-                parseCachingAnnotation(annotatedElement, cachingConfig, (Caching) annotation, operations);
+            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.Caching) {
+                parseMatrixCachingAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.Caching) annotation, operations);
                 return;
             }
-            if (annotation instanceof org.springframework.cache.annotation.Caching) {
-                parseCachingAnnotation(annotatedElement, cachingConfig, (org.springframework.cache.annotation.Caching) annotation, operations);
+            if (annotation instanceof Caching) {
+                parseCachingAnnotation(annotatedElement, cachingConfig, (Caching) annotation, operations);
             }
         });
         return operations;
@@ -114,10 +114,10 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         // 如果存在自定义的注解，则覆盖原注解
         boolean existCacheable = false, existCachePut = false;
         for (Annotation annotation : annotations) {
-            if (annotation.annotationType() == Cacheable.class) {
+            if (annotation.annotationType() == wang.liangchen.matrix.cache.sdk.annotation.Cacheable.class) {
                 existCacheable = true;
             }
-            if (annotation.annotationType() == CachePut.class) {
+            if (annotation.annotationType() == wang.liangchen.matrix.cache.sdk.annotation.CachePut.class) {
                 existCachePut = true;
             }
         }
@@ -125,16 +125,16 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         Iterator<? extends Annotation> iterator = annotations.iterator();
         while (iterator.hasNext()) {
             Class<? extends Annotation> annotationType = iterator.next().annotationType();
-            if (existCacheable && annotationType == org.springframework.cache.annotation.Cacheable.class) {
+            if (existCacheable && annotationType == Cacheable.class) {
                 iterator.remove();
             }
-            if (existCachePut && annotationType == org.springframework.cache.annotation.CachePut.class) {
+            if (existCachePut && annotationType == CachePut.class) {
                 iterator.remove();
             }
         }
     }
 
-    private MatrixCacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable) {
+    private MatrixCacheableOperation parseMatrixCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.Cacheable cacheable) {
         MatrixCacheableOperation.Builder builder = new MatrixCacheableOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cacheable.cacheNames());
@@ -153,7 +153,7 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         return op;
     }
 
-    private MatrixCacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.Cacheable cacheable) {
+    private MatrixCacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable) {
         MatrixCacheableOperation.Builder builder = new MatrixCacheableOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cacheable.cacheNames());
@@ -168,6 +168,26 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
 
         defaultConfig.applyDefault(builder);
         MatrixCacheableOperation op = builder.build();
+        validateCacheOperation(ae, op);
+        return op;
+    }
+
+    private CacheEvictOperation parseMatrixEvictAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.CacheEvict cacheEvict) {
+
+        CacheEvictOperation.Builder builder = new CacheEvictOperation.Builder();
+
+        builder.setName(ae.toString());
+        builder.setCacheNames(cacheEvict.cacheNames());
+        builder.setCondition(cacheEvict.condition());
+        builder.setKey(cacheEvict.key());
+        builder.setKeyGenerator(cacheEvict.keyGenerator());
+        builder.setCacheManager(cacheEvict.cacheManager());
+        builder.setCacheResolver(cacheEvict.cacheResolver());
+        builder.setCacheWide(cacheEvict.allEntries());
+        builder.setBeforeInvocation(cacheEvict.beforeInvocation());
+
+        defaultConfig.applyDefault(builder);
+        CacheEvictOperation op = builder.build();
         validateCacheOperation(ae, op);
         return op;
     }
@@ -192,7 +212,7 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         return op;
     }
 
-    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, CachePut cachePut) {
+    private CacheOperation parseMatrixPutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.CachePut cachePut) {
         MatrixCachePutOperation.Builder builder = new MatrixCachePutOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cachePut.cacheNames());
@@ -210,7 +230,7 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         return op;
     }
 
-    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.CachePut cachePut) {
+    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, CachePut cachePut) {
         MatrixCachePutOperation.Builder builder = new MatrixCachePutOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cachePut.cacheNames());
@@ -228,6 +248,21 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         return op;
     }
 
+    private void parseMatrixCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.Caching caching, Collection<CacheOperation> ops) {
+        wang.liangchen.matrix.cache.sdk.annotation.Cacheable[] cacheables = caching.cacheable();
+        for (wang.liangchen.matrix.cache.sdk.annotation.Cacheable cacheable : cacheables) {
+            ops.add(parseMatrixCacheableAnnotation(ae, defaultConfig, cacheable));
+        }
+        wang.liangchen.matrix.cache.sdk.annotation.CacheEvict[] cacheEvicts = caching.evict();
+        for (wang.liangchen.matrix.cache.sdk.annotation.CacheEvict cacheEvict : cacheEvicts) {
+            ops.add(parseMatrixEvictAnnotation(ae, defaultConfig, cacheEvict));
+        }
+        wang.liangchen.matrix.cache.sdk.annotation.CachePut[] cachePuts = caching.put();
+        for (wang.liangchen.matrix.cache.sdk.annotation.CachePut cachePut : cachePuts) {
+            ops.add(parseMatrixPutAnnotation(ae, defaultConfig, cachePut));
+        }
+    }
+
     private void parseCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Caching caching, Collection<CacheOperation> ops) {
         Cacheable[] cacheables = caching.cacheable();
         for (Cacheable cacheable : cacheables) {
@@ -239,21 +274,6 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         }
         CachePut[] cachePuts = caching.put();
         for (CachePut cachePut : cachePuts) {
-            ops.add(parsePutAnnotation(ae, defaultConfig, cachePut));
-        }
-    }
-
-    private void parseCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, org.springframework.cache.annotation.Caching caching, Collection<CacheOperation> ops) {
-        org.springframework.cache.annotation.Cacheable[] cacheables = caching.cacheable();
-        for (org.springframework.cache.annotation.Cacheable cacheable : cacheables) {
-            ops.add(parseCacheableAnnotation(ae, defaultConfig, cacheable));
-        }
-        CacheEvict[] cacheEvicts = caching.evict();
-        for (CacheEvict cacheEvict : cacheEvicts) {
-            ops.add(parseEvictAnnotation(ae, defaultConfig, cacheEvict));
-        }
-        org.springframework.cache.annotation.CachePut[] cachePuts = caching.put();
-        for (org.springframework.cache.annotation.CachePut cachePut : cachePuts) {
             ops.add(parsePutAnnotation(ae, defaultConfig, cachePut));
         }
     }

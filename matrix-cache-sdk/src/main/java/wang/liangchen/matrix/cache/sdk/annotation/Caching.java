@@ -1,6 +1,5 @@
 package wang.liangchen.matrix.cache.sdk.annotation;
 
-import org.springframework.cache.annotation.CacheEvict;
 
 import java.lang.annotation.*;
 

@@ -1,5 +1,6 @@
 package wang.liangchen.matrix.cache.sdk.override;
 
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
@@ -13,6 +14,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Import(EnableMatrixCaching.MatrixCacheImportSelector.class)
+@EnableCaching
 public @interface EnableMatrixCaching {
     class MatrixCacheImportSelector implements ImportSelector {
 

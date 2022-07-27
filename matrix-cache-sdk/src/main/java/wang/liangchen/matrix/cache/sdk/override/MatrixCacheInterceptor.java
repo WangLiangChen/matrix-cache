@@ -40,6 +40,7 @@ class MatrixCacheInterceptor extends org.springframework.cache.interceptor.Cache
         if (!this.initialized) {
             return invoker.invoke();
         }
+        // CacheOperationSource 使用 MatrixCacheAnnotationParser 来解析自定义的注解
         CacheOperationSource cacheOperationSource = getCacheOperationSource();
         if (null == cacheOperationSource) {
             return invoker.invoke();
@@ -62,6 +63,7 @@ class MatrixCacheInterceptor extends org.springframework.cache.interceptor.Cache
                 Object key = generateKey(context, NO_RESULT);
                 Cache cache = context.getCaches().iterator().next();
                 try {
+                    // 通过get(Object key, Callable<T> valueLoader);自定义valueLoader实现同步
                     return wrapCacheValue(method, handleSynchronizedGet(invoker, key, cache));
                 } catch (Cache.ValueRetrievalException ex) {
                     // Directly propagate ThrowableWrapper from the invoker,

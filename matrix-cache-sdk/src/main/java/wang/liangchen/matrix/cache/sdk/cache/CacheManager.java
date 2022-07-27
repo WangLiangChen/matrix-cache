@@ -10,8 +10,8 @@ import java.time.Duration;
  */
 public interface CacheManager extends org.springframework.cache.CacheManager {
     @Nullable
-    Cache getCache(String name, Duration ttl);
+    org.springframework.cache.Cache getCache(String name, Duration ttl);
 
     @Nullable
-    Cache getCache(String name);
+    org.springframework.cache.Cache getCache(String name);
 }

@@ -6,7 +6,6 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import wang.liangchen.matrix.cache.sdk.cache.Cache;
 import wang.liangchen.matrix.cache.sdk.consistency.CacheSynchronizer;
 
 import java.time.Duration;
@@ -18,7 +17,7 @@ import java.util.concurrent.Callable;
  *
  * @author LiangChen.Wang
  */
-public class MatrixRedisCache extends org.springframework.data.redis.cache.RedisCache implements Cache {
+public class MatrixRedisCache extends org.springframework.data.redis.cache.RedisCache implements wang.liangchen.matrix.cache.sdk.cache.Cache {
     private final static Logger logger = LoggerFactory.getLogger(MatrixRedisCache.class);
     private final String EMPTY_STRING = "";
     private final Duration ttl;

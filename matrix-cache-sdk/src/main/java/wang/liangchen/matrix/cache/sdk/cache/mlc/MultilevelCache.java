@@ -3,9 +3,10 @@ package wang.liangchen.matrix.cache.sdk.cache.mlc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wang.liangchen.matrix.cache.sdk.cache.Cache;
+import org.springframework.cache.Cache;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.Callable;
  *
  * @author LiangChen.Wang 2021/3/22
  */
-public class MultilevelCache implements Cache {
+public class MultilevelCache implements wang.liangchen.matrix.cache.sdk.cache.Cache {
     private final Logger logger = LoggerFactory.getLogger(MultilevelCache.class);
     private final String name;
     private final Duration ttl;
@@ -105,12 +106,18 @@ public class MultilevelCache implements Cache {
 
     @Override
     public Set<Object> keys() {
-        return localCache.keys();
+        if (localCache instanceof wang.liangchen.matrix.cache.sdk.cache.Cache) {
+            return ((wang.liangchen.matrix.cache.sdk.cache.Cache) localCache).keys();
+        }
+        return Collections.emptySet();
     }
 
     @Override
     public boolean containsKey(Object key) {
-        return localCache.containsKey(key);
+        if (localCache instanceof wang.liangchen.matrix.cache.sdk.cache.Cache) {
+            return ((wang.liangchen.matrix.cache.sdk.cache.Cache) localCache).containsKey(key);
+        }
+        return false;
     }
 
     @Override

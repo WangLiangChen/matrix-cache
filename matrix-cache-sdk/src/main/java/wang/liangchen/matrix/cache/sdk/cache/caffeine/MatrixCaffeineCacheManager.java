@@ -4,15 +4,14 @@ package wang.liangchen.matrix.cache.sdk.cache.caffeine;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
-import wang.liangchen.matrix.cache.sdk.cache.AbstractCacheManager;
-import wang.liangchen.matrix.cache.sdk.cache.Cache;
+import org.springframework.cache.Cache;
 
 import java.time.Duration;
 
 /**
  * @author LiangChen.Wang 2021/4/15
  */
-public class MatrixCaffeineCacheManager extends AbstractCacheManager {
+public class MatrixCaffeineCacheManager extends wang.liangchen.matrix.cache.sdk.cache.AbstractCacheManager {
     private CacheLoader<Object, Object> cacheLoader;
     private CaffeineSpec caffeineSpec;
 
