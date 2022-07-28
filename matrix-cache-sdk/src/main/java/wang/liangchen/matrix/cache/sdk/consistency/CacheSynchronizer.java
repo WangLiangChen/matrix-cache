@@ -13,7 +13,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Liangchen.Wang 2022-07-21 14:49
@@ -21,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public enum CacheSynchronizer {
     INSTANCE;
     private final Logger logger = LoggerFactory.getLogger(CacheSynchronizer.class);
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1, new CustomizableThreadFactory("mx-sync-"));
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2, new CustomizableThreadFactory("mx-sync-"));
     private final DateTimeFormatter EVICT_QUEUE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private MultilevelCacheManager multilevelCacheManager;
@@ -30,9 +32,6 @@ public enum CacheSynchronizer {
     public static final String EVICT_MESSAGE_TOPIC = "MatrixCacheEvictMessage";
     private final String EMPTY_STRING = "";
     public static final String EVICT_MESSAGE_SPLITTER = "-|-";
-
-    private Long previousOffset;
-    private BoundListOperations<Object, Object> previousEvictQueue;
 
     private Long offset;
     private BoundListOperations<Object, Object> evictQueue;
@@ -50,9 +49,7 @@ public enum CacheSynchronizer {
         // 初始化队列
         initQueue();
         // 启动5S定时器
-        executorService.scheduleWithFixedDelay(() -> {
-            pullMessage();
-        }, 5, 5, TimeUnit.SECONDS);
+        startEvictQueueTimer();
     }
 
     public void sendMessage(String name) {
@@ -75,7 +72,7 @@ public enum CacheSynchronizer {
 
     public void handleMessage() {
         logger.debug("Receive Pub/Sub message");
-        pullMessage();
+        pullEvictQueue();
         pushTimestamp = System.currentTimeMillis();
     }
 
@@ -85,6 +82,13 @@ public enum CacheSynchronizer {
         this.offset = this.evictQueue.size();
         logger.debug("inited evictQueueKey:{}, offset:{}", evictQueueKey, offset);
     }
+
+    private void startEvictQueueTimer() {
+        executorService.scheduleWithFixedDelay(() -> {
+            pullEvictQueue();
+        }, 0, 5, TimeUnit.SECONDS);
+    }
+
 
     private synchronized String switchQueue() {
         // 当前年月日
@@ -97,15 +101,16 @@ public enum CacheSynchronizer {
         }
         // 切换队列
         logger.debug("switch queue from:{} to:{}", evictQueueKey, nowKey);
-        this.previousEvictQueue = this.evictQueue;
-        this.previousOffset = this.offset;
+        // 切换队列后 启动新的定时任务
+        startPreviousEvictQueueTimer(evictQueue, offset);
+        // 新建当前队列
         evictQueueKey = nowKey;
         this.evictQueue = this.redisTemplate.boundListOps(evictQueueKey);
         this.offset = 0L;
         return evictQueueKey;
     }
 
-    private synchronized void pullMessage() {
+    private synchronized void pullEvictQueue() {
         String evictQueueKey = switchQueue();
         // 拉取当前队列
         Long size = this.evictQueue.size();
@@ -117,28 +122,32 @@ public enum CacheSynchronizer {
             this.offset = size;
         }
         pullTimestamp = System.currentTimeMillis();
-        // 上一个队列已被清理
-        if (null == this.previousEvictQueue) {
-            return;
-        }
-        // 上一个队列有效，继续拉取,直到被清理
-        String previousEvictQueueKey = this.previousEvictQueue.getKey().toString();
-        size = this.previousEvictQueue.size();
-        logger.debug("pull from previousEvictQueue, key:{}, offset:{}, size:{}", previousEvictQueueKey, this.previousOffset, size);
-        if (size > this.previousOffset) {
-            List<Object> messages = this.previousEvictQueue.range(previousOffset, size - 1);
-            logger.debug("pulled from previousEvictQueue, key:{}, messages:{}", previousEvictQueueKey, messages.toString());
-            multilevelCacheManager.handleEvictedKeys(messages);
-            previousOffset = size;
-        }
-        // 延时拉取20S后,删除上一个队列
-        LocalDateTime zero = LocalDate.parse(evictQueueKey, EVICT_QUEUE_KEY_FORMATTER).atStartOfDay();
-        zero = zero.plusSeconds(20);
-        if (LocalDateTime.now().isAfter(zero)) {
-            logger.debug("delete and reset previousEvictQueue, key:{}", previousEvictQueueKey);
-            this.redisTemplate.delete(previousEvictQueueKey);
-            this.previousEvictQueue = null;
-            this.previousOffset = null;
-        }
     }
+
+    private void startPreviousEvictQueueTimer(BoundListOperations<Object, Object> previousEvictQueue, Long offset) {
+        ScheduledFuture<?>[] scheduledFutures = {null};
+        AtomicLong atomicOffset = new AtomicLong(offset);
+        scheduledFutures[0] = executorService.scheduleWithFixedDelay(() -> {
+            String previousEvictQueueKey = previousEvictQueue.getKey().toString();
+            Long size = previousEvictQueue.size();
+            Long previousOffset = atomicOffset.get();
+            logger.debug("pull from previousEvictQueue, key:{}, offset:{}, size:{}", previousEvictQueueKey, previousOffset, size);
+            if (size > previousOffset) {
+                List<Object> messages = previousEvictQueue.range(previousOffset, size - 1);
+                logger.debug("pulled from previousEvictQueue, key:{}, messages:{}", previousEvictQueueKey, messages.toString());
+                multilevelCacheManager.handleEvictedKeys(messages);
+                atomicOffset.getAndSet(size);
+            }
+            // 延时拉取20S后,停止timer
+            LocalDateTime zero = LocalDate.parse(previousEvictQueueKey, EVICT_QUEUE_KEY_FORMATTER).atStartOfDay();
+            zero = zero.plusDays(1).plusSeconds(20);
+            if (LocalDateTime.now().isAfter(zero)) {
+                logger.debug("delete and reset previousEvictQueue, key:{}", previousEvictQueueKey);
+                this.redisTemplate.delete(previousEvictQueueKey);
+                scheduledFutures[0].cancel(true);
+            }
+        }, 0, 5, TimeUnit.SECONDS);
+    }
+
+
 }
