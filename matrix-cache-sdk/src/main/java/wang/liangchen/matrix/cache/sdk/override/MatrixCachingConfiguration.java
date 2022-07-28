@@ -6,9 +6,12 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.AnnotationCacheOperationSource;
 import org.springframework.cache.interceptor.CacheOperationSource;
+import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Role;
@@ -25,6 +28,7 @@ import wang.liangchen.matrix.cache.sdk.cache.caffeine.MatrixCaffeineCacheManager
 import wang.liangchen.matrix.cache.sdk.cache.mlc.MultilevelCacheManager;
 import wang.liangchen.matrix.cache.sdk.cache.redis.MatrixRedisCacheManager;
 import wang.liangchen.matrix.cache.sdk.consistency.CacheSynchronizer;
+import wang.liangchen.matrix.cache.sdk.generator.MatrixKeyGenerator;
 
 import java.util.concurrent.Executors;
 
@@ -71,12 +75,19 @@ class MatrixCachingConfiguration {
     @Primary
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public MatrixCacheInterceptor cacheInterceptorOverride(CacheOperationSource cacheOperationSource, org.springframework.cache.CacheManager springCacheManager) {
+    public MatrixCacheInterceptor cacheInterceptorOverride(CacheOperationSource cacheOperationSource, CacheManager cacheManager, KeyGenerator keyGenerator) {
         MatrixCacheInterceptor matrixCacheInterceptor = new MatrixCacheInterceptor();
         matrixCacheInterceptor.setCacheOperationSource(cacheOperationSource);
-        matrixCacheInterceptor.setCacheManager(springCacheManager);
-        matrixCacheInterceptor.setCacheResolver(new MatrixCacheResolver(springCacheManager));
+        matrixCacheInterceptor.setCacheManager(cacheManager);
+        matrixCacheInterceptor.setKeyGenerator(keyGenerator);
+        matrixCacheInterceptor.setCacheResolver(new MatrixCacheResolver(cacheManager));
         return matrixCacheInterceptor;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(KeyGenerator.class)
+    public KeyGenerator keyGenerator() {
+        return new MatrixKeyGenerator();
     }
 
     private MatrixCaffeineCacheManager createLocalCacheManager(CacheProperties cacheProperties, ObjectProvider<CacheLoader<Object, Object>> cacheLoader) {

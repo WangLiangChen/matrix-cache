@@ -3,19 +3,21 @@ package wang.liangchen.matrix.cache.sdk.generator;
 import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 /**
  * @author Liangchen.Wang
  */
 public class MatrixCacheKey implements Serializable {
-    public static final MatrixCacheKey EMPTY = new MatrixCacheKey();
     private final Object[] params;
-    private final int hashCode;
+    private transient final int hashCode;
 
-    public MatrixCacheKey(Object... elements) {
-        this.params = new Object[elements.length];
-        System.arraycopy(elements, 0, this.params, 0, elements.length);
+    public MatrixCacheKey(Object target, Method method, Object... elements) {
+        this.params = new Object[elements.length + 2];
+        this.params[0] = target.getClass().getSimpleName();
+        this.params[1] = method.getName();
+        System.arraycopy(elements, 0, this.params, 2, elements.length);
         this.hashCode = Arrays.deepHashCode(this.params);
     }
 
