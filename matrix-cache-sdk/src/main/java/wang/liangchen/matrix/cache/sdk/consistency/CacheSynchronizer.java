@@ -32,6 +32,7 @@ public enum CacheSynchronizer {
     public static final String EVICT_MESSAGE_TOPIC = "MatrixCacheEvictMessage";
     private final String EMPTY_STRING = "";
     public static final String EVICT_MESSAGE_SPLITTER = "-|-";
+    private final long PULL_DELAY_SECONDS = 5;
 
     private Long offset;
     private BoundListOperations<Object, Object> evictQueue;
@@ -59,13 +60,10 @@ public enum CacheSynchronizer {
     public void sendMessage(String name, String key) {
         // 切换队列
         String evictQueueKey = switchQueue();
-        logger.debug("send message,evictQueueKey:{}, name:{}, key:{}", evictQueueKey, name, key);
+        String message = null == key ? name : String.format("%s%s%s", name, EVICT_MESSAGE_SPLITTER, key);
         // 写入队列
-        if (null == key) {
-            evictQueue.rightPush(name);
-        } else {
-            evictQueue.rightPush(String.format("%s%s%s", name, EVICT_MESSAGE_SPLITTER, key));
-        }
+        logger.debug("send message,evictQueueKey:{}, message:{}", evictQueueKey, message);
+        evictQueue.rightPush(message);
         // 发送Pub/Sub消息
         redisTemplate.convertAndSend(EVICT_MESSAGE_TOPIC, EMPTY_STRING);
     }
@@ -101,9 +99,7 @@ public enum CacheSynchronizer {
         }
         // 切换队列
         logger.debug("switch queue from:{} to:{}", evictQueueKey, nowKey);
-        // 切换队列后 启动新的定时任务
         startPreviousEvictQueueTimer(evictQueue, offset);
-        // 新建当前队列
         evictQueueKey = nowKey;
         this.evictQueue = this.redisTemplate.boundListOps(evictQueueKey);
         this.offset = 0L;
@@ -124,13 +120,15 @@ public enum CacheSynchronizer {
         pullTimestamp = System.currentTimeMillis();
     }
 
-    private void startPreviousEvictQueueTimer(BoundListOperations<Object, Object> previousEvictQueue, Long offset) {
-        ScheduledFuture<?>[] scheduledFutures = {null};
+    private void startPreviousEvictQueueTimer(BoundListOperations<Object, Object> evictQueue, Long offset) {
+        BoundListOperations<Object, Object> previousEvictQueue = evictQueue;
+        String previousEvictQueueKey = previousEvictQueue.getKey().toString();
         AtomicLong atomicOffset = new AtomicLong(offset);
+        // 开启定时
+        ScheduledFuture<?>[] scheduledFutures = {null};
         scheduledFutures[0] = executorService.scheduleWithFixedDelay(() -> {
-            String previousEvictQueueKey = previousEvictQueue.getKey().toString();
             Long size = previousEvictQueue.size();
-            Long previousOffset = atomicOffset.get();
+            long previousOffset = atomicOffset.get();
             logger.debug("pull from previousEvictQueue, key:{}, offset:{}, size:{}", previousEvictQueueKey, previousOffset, size);
             if (size > previousOffset) {
                 List<Object> messages = previousEvictQueue.range(previousOffset, size - 1);
@@ -142,12 +140,12 @@ public enum CacheSynchronizer {
             LocalDateTime zero = LocalDate.parse(previousEvictQueueKey, EVICT_QUEUE_KEY_FORMATTER).atStartOfDay();
             zero = zero.plusDays(1).plusSeconds(20);
             if (LocalDateTime.now().isAfter(zero)) {
-                logger.debug("delete and reset previousEvictQueue, key:{}", previousEvictQueueKey);
+                logger.debug("delete previousEvictQueue, key:{}, offset:{}, size:{}", previousEvictQueueKey, previousOffset, size);
                 this.redisTemplate.delete(previousEvictQueueKey);
+                // 停止timer
                 scheduledFutures[0].cancel(true);
             }
-        }, 0, 5, TimeUnit.SECONDS);
+        }, 0, PULL_DELAY_SECONDS, TimeUnit.SECONDS);
     }
-
 
 }
