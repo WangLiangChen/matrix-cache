@@ -34,13 +34,13 @@ class MatrixCacheResolver extends SimpleCacheResolver {
         Collection<String> cacheNames = getCacheNames(context);
         Collection<Cache> caches = new ArrayList<>(cacheNames.size());
         for (String cacheName : cacheNames) {
+            Cache cache;
             if (null == ttl || Duration.ZERO == ttl) {
-                Cache cache = cacheManager.getCache(cacheName);
-                caches.add(cache);
+                cache = cacheManager.getCache(cacheName);
             } else {
-                Cache cache = ((wang.liangchen.matrix.cache.sdk.cache.CacheManager) cacheManager).getCache(cacheName, ttl);
-                caches.add(cache);
+                cache = ((wang.liangchen.matrix.cache.sdk.cache.CacheManager) cacheManager).getCache(cacheName, ttl);
             }
+            caches.add(cache);
         }
         return caches;
     }

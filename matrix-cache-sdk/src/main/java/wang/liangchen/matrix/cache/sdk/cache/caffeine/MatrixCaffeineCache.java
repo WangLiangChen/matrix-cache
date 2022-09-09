@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * @author LiangChen.Wang
@@ -18,7 +18,7 @@ public class MatrixCaffeineCache extends org.springframework.cache.caffeine.Caff
      * time to idle - tti
      */
     private final Duration ttl;
-    private final Set<Object> keys = new HashSet<>();
+    private final Set<Object> keys = new CopyOnWriteArraySet<>();
 
     public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, Duration ttl) {
         this(name, cache, true, ttl);

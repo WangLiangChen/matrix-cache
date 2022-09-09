@@ -7,6 +7,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
+import wang.liangchen.matrix.cache.sdk.annotation.CacheExpire;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -21,13 +22,10 @@ import java.util.*;
 class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
     private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<Class<? extends Annotation>>() {{
-        add(wang.liangchen.matrix.cache.sdk.annotation.Cacheable.class);
         add(Cacheable.class);
-        add(wang.liangchen.matrix.cache.sdk.annotation.CacheEvict.class);
+        add(CacheExpire.class);
         add(CacheEvict.class);
-        add(wang.liangchen.matrix.cache.sdk.annotation.CachePut.class);
         add(CachePut.class);
-        add(wang.liangchen.matrix.cache.sdk.annotation.Caching.class);
         add(Caching.class);
     }};
 
@@ -70,71 +68,38 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
                 AnnotatedElementUtils.getAllMergedAnnotations(annotatedElement, CACHE_OPERATION_ANNOTATIONS) :
                 AnnotatedElementUtils.findAllMergedAnnotations(annotatedElement, CACHE_OPERATION_ANNOTATIONS));
         if (annotations.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
-        removeSpringCacheAnnotation(annotations);
         final Collection<CacheOperation> operations = new ArrayList<>();
-        annotations.parallelStream().forEach(annotation -> {
-            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.Cacheable) {
-                operations.add(parseMatrixCacheableAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.Cacheable) annotation));
-                return;
+        // 先获取里面的CacheExpire注解
+        CacheExpire cacheExpire = null;
+        for (Annotation annotation : annotations) {
+            if (annotation instanceof CacheExpire) {
+                cacheExpire = (CacheExpire) annotation;
+                break;
             }
+        }
+        for (Annotation annotation : annotations) {
             if (annotation instanceof Cacheable) {
-                operations.add(parseCacheableAnnotation(annotatedElement, cachingConfig, (Cacheable) annotation));
-                return;
-            }
-            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.CachePut) {
-                operations.add(parseMatrixPutAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.CachePut) annotation));
-                return;
+                operations.add(parseCacheableAnnotation(annotatedElement, cachingConfig, (Cacheable) annotation, cacheExpire));
+                continue;
             }
             if (annotation instanceof CachePut) {
-                operations.add(parsePutAnnotation(annotatedElement, cachingConfig, (CachePut) annotation));
-                return;
-            }
-            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.CacheEvict) {
-                operations.add(parseMatrixEvictAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.CacheEvict) annotation));
-                return;
+                operations.add(parsePutAnnotation(annotatedElement, cachingConfig, (CachePut) annotation, cacheExpire));
+                continue;
             }
             if (annotation instanceof CacheEvict) {
                 operations.add(parseEvictAnnotation(annotatedElement, cachingConfig, (CacheEvict) annotation));
-                return;
-            }
-            if (annotation instanceof wang.liangchen.matrix.cache.sdk.annotation.Caching) {
-                parseMatrixCachingAnnotation(annotatedElement, cachingConfig, (wang.liangchen.matrix.cache.sdk.annotation.Caching) annotation, operations);
-                return;
+                continue;
             }
             if (annotation instanceof Caching) {
-                parseCachingAnnotation(annotatedElement, cachingConfig, (Caching) annotation, operations);
+                parseCachingAnnotation(annotatedElement, cachingConfig, (Caching) annotation, operations, cacheExpire);
             }
-        });
+        }
         return operations;
     }
 
-    private void removeSpringCacheAnnotation(Collection<? extends Annotation> annotations) {
-        // 如果存在自定义的注解，则覆盖原注解
-        boolean existCacheable = false, existCachePut = false;
-        for (Annotation annotation : annotations) {
-            if (annotation.annotationType() == wang.liangchen.matrix.cache.sdk.annotation.Cacheable.class) {
-                existCacheable = true;
-            }
-            if (annotation.annotationType() == wang.liangchen.matrix.cache.sdk.annotation.CachePut.class) {
-                existCachePut = true;
-            }
-        }
-        // 移除对应的Spring注解
-        Iterator<? extends Annotation> iterator = annotations.iterator();
-        while (iterator.hasNext()) {
-            Class<? extends Annotation> annotationType = iterator.next().annotationType();
-            if (existCacheable && annotationType == Cacheable.class) {
-                iterator.remove();
-            }
-            if (existCachePut && annotationType == CachePut.class) {
-                iterator.remove();
-            }
-        }
-    }
-
-    private MatrixCacheableOperation parseMatrixCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.Cacheable cacheable) {
+    private MatrixCacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable, CacheExpire cacheExpire) {
         MatrixCacheableOperation.Builder builder = new MatrixCacheableOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cacheable.cacheNames());
@@ -145,49 +110,14 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         builder.setCacheManager(cacheable.cacheManager());
         builder.setCacheResolver(cacheable.cacheResolver());
         builder.setSync(cacheable.sync());
-        builder.setTtl(Duration.ofMillis(cacheable.ttlMs()));
+        if (null == cacheExpire) {
+            builder.setTtl(Duration.ZERO);
+        } else {
+            builder.setTtl(Duration.ofMillis(cacheExpire.timeUnit().toMillis(cacheExpire.ttl())));
+        }
 
         defaultConfig.applyDefault(builder);
         MatrixCacheableOperation op = builder.build();
-        validateCacheOperation(ae, op);
-        return op;
-    }
-
-    private MatrixCacheableOperation parseCacheableAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable) {
-        MatrixCacheableOperation.Builder builder = new MatrixCacheableOperation.Builder();
-        builder.setName(ae.toString());
-        builder.setCacheNames(cacheable.cacheNames());
-        builder.setCondition(cacheable.condition());
-        builder.setUnless(cacheable.unless());
-        builder.setKey(cacheable.key());
-        builder.setKeyGenerator(cacheable.keyGenerator());
-        builder.setCacheManager(cacheable.cacheManager());
-        builder.setCacheResolver(cacheable.cacheResolver());
-        builder.setSync(cacheable.sync());
-        builder.setTtl(Duration.ZERO);
-
-        defaultConfig.applyDefault(builder);
-        MatrixCacheableOperation op = builder.build();
-        validateCacheOperation(ae, op);
-        return op;
-    }
-
-    private CacheEvictOperation parseMatrixEvictAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.CacheEvict cacheEvict) {
-
-        CacheEvictOperation.Builder builder = new CacheEvictOperation.Builder();
-
-        builder.setName(ae.toString());
-        builder.setCacheNames(cacheEvict.cacheNames());
-        builder.setCondition(cacheEvict.condition());
-        builder.setKey(cacheEvict.key());
-        builder.setKeyGenerator(cacheEvict.keyGenerator());
-        builder.setCacheManager(cacheEvict.cacheManager());
-        builder.setCacheResolver(cacheEvict.cacheResolver());
-        builder.setCacheWide(cacheEvict.allEntries());
-        builder.setBeforeInvocation(cacheEvict.beforeInvocation());
-
-        defaultConfig.applyDefault(builder);
-        CacheEvictOperation op = builder.build();
         validateCacheOperation(ae, op);
         return op;
     }
@@ -212,7 +142,7 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         return op;
     }
 
-    private CacheOperation parseMatrixPutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.CachePut cachePut) {
+    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, CachePut cachePut, CacheExpire cacheExpire) {
         MatrixCachePutOperation.Builder builder = new MatrixCachePutOperation.Builder();
         builder.setName(ae.toString());
         builder.setCacheNames(cachePut.cacheNames());
@@ -222,7 +152,11 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         builder.setKeyGenerator(cachePut.keyGenerator());
         builder.setCacheManager(cachePut.cacheManager());
         builder.setCacheResolver(cachePut.cacheResolver());
-        builder.setTtl(Duration.ofMillis(cachePut.ttlMs()));
+        if (null == cacheExpire) {
+            builder.setTtl(Duration.ZERO);
+        } else {
+            builder.setTtl(Duration.ofMillis(cacheExpire.timeUnit().toMillis(cacheExpire.ttl())));
+        }
 
         defaultConfig.applyDefault(builder);
         MatrixCachePutOperation op = builder.build();
@@ -230,43 +164,10 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         return op;
     }
 
-    private CacheOperation parsePutAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, CachePut cachePut) {
-        MatrixCachePutOperation.Builder builder = new MatrixCachePutOperation.Builder();
-        builder.setName(ae.toString());
-        builder.setCacheNames(cachePut.cacheNames());
-        builder.setCondition(cachePut.condition());
-        builder.setUnless(cachePut.unless());
-        builder.setKey(cachePut.key());
-        builder.setKeyGenerator(cachePut.keyGenerator());
-        builder.setCacheManager(cachePut.cacheManager());
-        builder.setCacheResolver(cachePut.cacheResolver());
-        builder.setTtl(Duration.ZERO);
-
-        defaultConfig.applyDefault(builder);
-        MatrixCachePutOperation op = builder.build();
-        validateCacheOperation(ae, op);
-        return op;
-    }
-
-    private void parseMatrixCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, wang.liangchen.matrix.cache.sdk.annotation.Caching caching, Collection<CacheOperation> ops) {
-        wang.liangchen.matrix.cache.sdk.annotation.Cacheable[] cacheables = caching.cacheable();
-        for (wang.liangchen.matrix.cache.sdk.annotation.Cacheable cacheable : cacheables) {
-            ops.add(parseMatrixCacheableAnnotation(ae, defaultConfig, cacheable));
-        }
-        wang.liangchen.matrix.cache.sdk.annotation.CacheEvict[] cacheEvicts = caching.evict();
-        for (wang.liangchen.matrix.cache.sdk.annotation.CacheEvict cacheEvict : cacheEvicts) {
-            ops.add(parseMatrixEvictAnnotation(ae, defaultConfig, cacheEvict));
-        }
-        wang.liangchen.matrix.cache.sdk.annotation.CachePut[] cachePuts = caching.put();
-        for (wang.liangchen.matrix.cache.sdk.annotation.CachePut cachePut : cachePuts) {
-            ops.add(parseMatrixPutAnnotation(ae, defaultConfig, cachePut));
-        }
-    }
-
-    private void parseCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Caching caching, Collection<CacheOperation> ops) {
+    private void parseCachingAnnotation(AnnotatedElement ae, DefaultCacheConfig defaultConfig, Caching caching, Collection<CacheOperation> ops, CacheExpire cacheExpire) {
         Cacheable[] cacheables = caching.cacheable();
         for (Cacheable cacheable : cacheables) {
-            ops.add(parseCacheableAnnotation(ae, defaultConfig, cacheable));
+            ops.add(parseCacheableAnnotation(ae, defaultConfig, cacheable, cacheExpire));
         }
         CacheEvict[] cacheEvicts = caching.evict();
         for (CacheEvict cacheEvict : cacheEvicts) {
@@ -274,7 +175,7 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
         }
         CachePut[] cachePuts = caching.put();
         for (CachePut cachePut : cachePuts) {
-            ops.add(parsePutAnnotation(ae, defaultConfig, cachePut));
+            ops.add(parsePutAnnotation(ae, defaultConfig, cachePut, cacheExpire));
         }
     }
 
