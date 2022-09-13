@@ -275,29 +275,30 @@ class MatrixCacheInterceptor extends org.springframework.cache.interceptor.Cache
     protected CacheOperationMetadata getCacheOperationMetadata(CacheOperation operation, Method method, Class<?> targetClass) {
         CacheOperationCacheKey cacheKey = new CacheOperationCacheKey(operation, method, targetClass);
         CacheOperationMetadata metadata = this.metadataCache.get(cacheKey);
-        if (metadata == null) {
-            KeyGenerator operationKeyGenerator;
-            if (StringUtils.hasText(operation.getKeyGenerator())) {
-                operationKeyGenerator = this.getBean(operation.getKeyGenerator(), KeyGenerator.class);
-            } else {
-                operationKeyGenerator = this.getKeyGenerator();
-            }
-
-            CacheResolver operationCacheResolver;
-            if (StringUtils.hasText(operation.getCacheResolver())) {
-                operationCacheResolver = this.getBean(operation.getCacheResolver(), CacheResolver.class);
-            } else if (StringUtils.hasText(operation.getCacheManager())) {
-                CacheManager cacheManager = this.getBean(operation.getCacheManager(), CacheManager.class);
-                operationCacheResolver = new MatrixCacheResolver(cacheManager);
-            } else {
-                operationCacheResolver = this.getCacheResolver();
-                Assert.state(operationCacheResolver != null, "No CacheResolver/CacheManager set");
-            }
-
-            metadata = new CacheOperationMetadata(operation, method, targetClass, operationKeyGenerator, operationCacheResolver);
-            this.metadataCache.put(cacheKey, metadata);
+        if (null != metadata) {
+            return metadata;
         }
 
+        KeyGenerator operationKeyGenerator;
+        if (StringUtils.hasText(operation.getKeyGenerator())) {
+            operationKeyGenerator = this.getBean(operation.getKeyGenerator(), KeyGenerator.class);
+        } else {
+            operationKeyGenerator = this.getKeyGenerator();
+        }
+
+        CacheResolver operationCacheResolver;
+        if (StringUtils.hasText(operation.getCacheResolver())) {
+            operationCacheResolver = this.getBean(operation.getCacheResolver(), CacheResolver.class);
+        } else if (StringUtils.hasText(operation.getCacheManager())) {
+            CacheManager cacheManager = this.getBean(operation.getCacheManager(), CacheManager.class);
+            operationCacheResolver = new MatrixCacheResolver(cacheManager);
+        } else {
+            operationCacheResolver = this.getCacheResolver();
+            Assert.state(operationCacheResolver != null, "No CacheResolver/CacheManager set");
+        }
+
+        metadata = new CacheOperationMetadata(operation, method, targetClass, operationKeyGenerator, operationCacheResolver);
+        this.metadataCache.put(cacheKey, metadata);
         return metadata;
     }
 

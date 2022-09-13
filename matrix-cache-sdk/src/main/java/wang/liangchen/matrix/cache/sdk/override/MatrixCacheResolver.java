@@ -24,11 +24,13 @@ class MatrixCacheResolver extends SimpleCacheResolver {
     @Override
     public Collection<? extends Cache> resolveCaches(CacheOperationInvocationContext<?> context) {
         Duration ttl = null;
-        BasicOperation operation = context.getOperation();
-        if (operation instanceof MatrixCacheableOperation) {
-            ttl = ((MatrixCacheableOperation) operation).getTtl();
-        } else if (operation instanceof MatrixCachePutOperation) {
-            ttl = ((MatrixCachePutOperation) operation).getTtl();
+        if(cacheManager instanceof  wang.liangchen.matrix.cache.sdk.cache.CacheManager){
+            BasicOperation operation = context.getOperation();
+            if (operation instanceof MatrixCacheableOperation) {
+                ttl = ((MatrixCacheableOperation) operation).getTtl();
+            } else if (operation instanceof MatrixCachePutOperation) {
+                ttl = ((MatrixCachePutOperation) operation).getTtl();
+            }
         }
 
         Collection<String> cacheNames = getCacheNames(context);

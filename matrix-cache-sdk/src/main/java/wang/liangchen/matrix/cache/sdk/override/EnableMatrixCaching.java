@@ -20,7 +20,10 @@ public @interface EnableMatrixCaching {
 
         @Override
         public String[] selectImports(AnnotationMetadata importingClassMetadata) {
-            return new String[]{MatrixCachingConfiguration.class.getName()};
+            return new String[]{MatrixCachingConfiguration.class.getName()
+                    , MatrixLocalCachingConfiguration.class.getName()
+                    , MatrixDistributedCachingConfiguration.class.getName()
+                    , MatrixMultilevelCachingConfiguration.class.getName()};
         }
     }
 
