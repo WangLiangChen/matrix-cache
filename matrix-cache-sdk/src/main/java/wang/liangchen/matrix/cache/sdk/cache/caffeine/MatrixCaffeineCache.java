@@ -1,8 +1,5 @@
 package wang.liangchen.matrix.cache.sdk.cache.caffeine;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -12,7 +9,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author LiangChen.Wang
  */
 public class MatrixCaffeineCache extends org.springframework.cache.caffeine.CaffeineCache implements wang.liangchen.matrix.cache.sdk.cache.Cache {
-    private final static Logger logger = LoggerFactory.getLogger(MatrixCaffeineCache.class);
     /**
      * time to live - ttl
      * time to idle - tti

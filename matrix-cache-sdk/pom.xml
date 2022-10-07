@@ -37,6 +37,18 @@
             <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.protostuff</groupId>
+            <artifactId>protostuff-runtime</artifactId>
+            <version>1.8.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.protostuff</groupId>
+            <artifactId>protostuff-core</artifactId>
+            <version>1.8.0</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 </project>

@@ -36,15 +36,20 @@ public class MultilevelCache implements wang.liangchen.matrix.cache.sdk.cache.Ca
         // null说明缓存不存在
         ValueWrapper valueWrapper = localCache.get(key);
         if (null != valueWrapper) {
+            logger.debug("LocalCache Hit,name: {},key: {}", this.name, key);
             return valueWrapper;
         }
+        logger.debug("LocalCache Miss,name: {},key: {}", this.name, key);
         valueWrapper = distributedCache.get(key);
         if (null == valueWrapper) {
+            logger.debug("DistributedCache Miss,name: {},key: {}", this.name, key);
             return null;
         }
+        logger.debug("DistributedCache Hit,name: {},key: {}", this.name, key);
         Object value = valueWrapper.get();
         // 写入localCache
         localCache.put(key, value);
+        logger.debug("Sync to LocalCache,name: {},key: {}", this.name, key);
         return valueWrapper;
     }
 
@@ -52,50 +57,82 @@ public class MultilevelCache implements wang.liangchen.matrix.cache.sdk.cache.Ca
     public <T> T get(Object key, Class<T> type) {
         T value = localCache.get(key, type);
         if (null != value) {
+            logger.debug("LocalCache Hit,name: {},key: {}", this.name, key);
             return value;
         }
+        logger.debug("LocalCache Miss,name: {},key: {}", this.name, key);
         value = distributedCache.get(key, type);
         if (null == value) {
+            logger.debug("DistributedCache Miss,name: {},key: {}", this.name, key);
             return null;
         }
+        logger.debug("DistributedCache Hit,name: {},key: {}", this.name, key);
         localCache.put(key, value);
+        logger.debug("Sync to LocalCache,name: {},key: {}", this.name, key);
         return value;
     }
 
     @Override
     public <T> T get(Object key, Callable<T> valueLoader) {
-        distributedCache.get(key, valueLoader);
-        return localCache.get(key, valueLoader);
+        boolean hits[] = {true, true};
+        T value = localCache.get(key, () -> {
+            hits[0] = false;
+            logger.debug("LocalCache Miss,name: {},key: {}", this.name, key);
+            return distributedCache.get(key, () -> {
+                hits[1] = false;
+                logger.debug("DistributedCache Miss,name: {},key: {}", this.name, key);
+                return valueLoader.call();
+            });
+        });
+        if (hits[0]) {
+            logger.debug("LocalCache Hit,name: {},key: {}", this.name, key);
+        }
+        if (!hits[0] && hits[1]) {
+            logger.debug("DistributedCache Hit,name: {},key: {}", this.name, key);
+        }
+        return value;
     }
 
     @Override
     public void put(Object key, Object value) {
         distributedCache.put(key, value);
+        logger.debug("put DistributedCache,name: {},key: {}", this.name, key);
         localCache.put(key, value);
+        logger.debug("put LocalCache,name: {},key: {}", this.name, key);
     }
 
     @Override
     public void evict(Object key) {
         distributedCache.evict(key);
+        logger.debug("evict DistributedCache,name: {},key: {}", this.name, key);
         localCache.evict(key);
+        logger.debug("evict LocalCache,name: {},key: {}", this.name, key);
     }
 
     @Override
     public void clear() {
         distributedCache.clear();
+        logger.debug("clear DistributedCache,name: {}", this.name);
         localCache.clear();
+        logger.debug("clear LocalCache,name: {}", this.name);
     }
 
     @Override
     public ValueWrapper putIfAbsent(Object key, Object value) {
         distributedCache.putIfAbsent(key, value);
-        return localCache.putIfAbsent(key, value);
+        logger.debug("putIfAbsent DistributedCache,name: {},key: {}", this.name, key);
+        ValueWrapper valueWrapper = localCache.putIfAbsent(key, value);
+        logger.debug("putIfAbsent LocalCache,name: {},key: {}", this.name, key);
+        return valueWrapper;
     }
 
     @Override
     public boolean evictIfPresent(Object key) {
         distributedCache.evictIfPresent(key);
-        return localCache.evictIfPresent(key);
+        logger.debug("evictIfPresent DistributedCache,name: {},key: {}", this.name, key);
+        boolean evictIfPresent = localCache.evictIfPresent(key);
+        logger.debug("evictIfPresent LocalCache,name: {},key: {}", this.name, key);
+        return evictIfPresent;
     }
 
     @Override

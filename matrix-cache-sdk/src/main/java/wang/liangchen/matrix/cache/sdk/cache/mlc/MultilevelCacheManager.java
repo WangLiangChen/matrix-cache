@@ -1,5 +1,7 @@
 package wang.liangchen.matrix.cache.sdk.cache.mlc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,6 +15,7 @@ import java.util.List;
  * @author LiangChen.Wang 2021/3/22
  */
 public class MultilevelCacheManager extends wang.liangchen.matrix.cache.sdk.cache.AbstractCacheManager {
+    private final static Logger logger = LoggerFactory.getLogger(MultilevelCacheManager.class);
     private final CacheManager localCacheManager, distributedCacheManager;
     private final RedisTemplate<Object, Object> redisTemplate;
 
@@ -52,6 +55,7 @@ public class MultilevelCacheManager extends wang.liangchen.matrix.cache.sdk.cach
     }
 
     public void handleMessage(Object message) {
+        logger.debug("Received the cache clearing message published by Redis");
         CacheSynchronizer.INSTANCE.handleMessage();
     }
 
@@ -61,12 +65,14 @@ public class MultilevelCacheManager extends wang.liangchen.matrix.cache.sdk.cach
             if (index < 0) {
                 Cache cache = localCacheManager.getCache(message);
                 cache.clear();
+                logger.debug("Cleared cache: {} ", message);
                 return;
             }
             String name = message.substring(0, index);
             Cache cache = localCacheManager.getCache(name);
             String key = message.substring(index + 1);
             cache.evict(key);
+            logger.debug("Evicted cache: {},key: {}", message, key);
         });
     }
 }
