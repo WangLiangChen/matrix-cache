@@ -8,7 +8,6 @@ A transparent multilevel cache framework based on spring cache.
 因SNAPSHOT版本未同步至中央仓库，故需配置如下仓库
 
 ```xml
-
 <repositories>
     <repository>
         <id>matrix-snapshot</id>
