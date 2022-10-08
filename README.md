@@ -4,7 +4,8 @@ A transparent multilevel cache framework based on spring cache.
 
 # Maven依赖
 
-因SNAPSHOT版本未同步至中央仓库，故需配置repository
+## 配置repository
+因SNAPSHOT版本未同步至中央仓库，故需配置如下仓库
 
 ```xml
 
@@ -19,7 +20,7 @@ A transparent multilevel cache framework based on spring cache.
     </repository>
 </repositories>
 ```
-
+## Maven依赖
 ```xml
 
 <dependency>
@@ -27,6 +28,48 @@ A transparent multilevel cache framework based on spring cache.
     <artifactId>matrix-cache-sdk-spring-boot-starter</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
+```
+## 其它可选依赖
+组件引用到的依赖项，部分为provided依赖，需要根据实际的使用场景自行引入
+### 仅使用Caffeine本地缓存
+```xml
+<dependency>
+    <groupId>com.github.ben-manes.caffeine</groupId>
+    <artifactId>caffeine</artifactId>
+</dependency>
+```
+### 仅使用Redis分布式缓存
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis-reactive</artifactId>    
+</dependency>
+```
+### 使用多级缓存
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+    </dependency>
+</dependencies>
+```
+### Redis使用Protostuff序列化
+```xml
+<dependencies>
+    <dependency>
+        <groupId>io.protostuff</groupId>
+        <artifactId>protostuff-runtime</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.protostuff</groupId>
+        <artifactId>protostuff-core</artifactId>
+    </dependency>
+</dependencies>
 ```
 
 # 使用方式
