@@ -16,13 +16,16 @@ public class MatrixCaffeineCache extends org.springframework.cache.caffeine.Caff
     private final Duration ttl;
     private final Set<Object> keys = new CopyOnWriteArraySet<>();
 
-    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, Duration ttl) {
-        this(name, cache, true, ttl);
+    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, Duration ttl, MatrixRemovalListener removalListener) {
+        this(name, cache, true, ttl, removalListener);
     }
 
-    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, boolean allowNullValues, Duration ttl) {
+    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, boolean allowNullValues, Duration ttl, MatrixRemovalListener removalListener) {
         super(name, cache, allowNullValues);
         this.ttl = ttl;
+        removalListener.registerDelegate((key, value, cause) -> {
+            this.keys.remove(key);
+        });
     }
 
     @Override
