@@ -29,14 +29,16 @@ public class MatrixCaffeineCacheManager extends wang.liangchen.matrix.cache.sdk.
     }
 
     private MatrixCaffeineCache caffeineCache(String name, Duration ttl) {
-        return new MatrixCaffeineCache(name, nativeCache(ttl), isAllowNullValues(), ttl);
+        MatrixRemovalListener removalListener = new MatrixRemovalListener();
+        return new MatrixCaffeineCache(name, nativeCache(ttl, removalListener), isAllowNullValues(), ttl, removalListener);
     }
 
-    private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(Duration ttl) {
+    private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(Duration ttl, MatrixRemovalListener removalListener) {
         Caffeine<Object, Object> cacheBuilder = null == this.caffeineSpec ? Caffeine.newBuilder() : Caffeine.from(caffeineSpec);
         if (Duration.ZERO.compareTo(ttl) < 0) {
             cacheBuilder.expireAfterWrite(ttl);
         }
+        cacheBuilder.evictionListener(removalListener);
         return (this.cacheLoader != null ? cacheBuilder.build(this.cacheLoader) : cacheBuilder.build());
     }
 
