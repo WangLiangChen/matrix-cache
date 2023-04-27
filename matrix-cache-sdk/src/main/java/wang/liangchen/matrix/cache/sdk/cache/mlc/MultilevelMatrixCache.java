@@ -4,6 +4,7 @@ package wang.liangchen.matrix.cache.sdk.cache.mlc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
+import wang.liangchen.matrix.cache.sdk.cache.MatrixCache;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -11,19 +12,17 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
- * 根据Cache实现的不同 实现Key级别的过期
- *
  * @author LiangChen.Wang 2021/3/22
  */
-public class MultilevelCache implements wang.liangchen.matrix.cache.sdk.cache.Cache {
-    private final Logger logger = LoggerFactory.getLogger(MultilevelCache.class);
+public class MultilevelMatrixCache implements MatrixCache {
+    private final Logger logger = LoggerFactory.getLogger(MultilevelMatrixCache.class);
     private final String name;
     private final Duration ttl;
     private final Cache localCache;
     private final Cache distributedCache;
-    private final MultilevelCacheManager multilevelCacheManager;
+    private final MultilevelMatrixCacheManager multilevelCacheManager;
 
-    public MultilevelCache(String name, Duration ttl, MultilevelCacheManager multilevelCacheManager) {
+    public MultilevelMatrixCache(String name, Duration ttl, MultilevelMatrixCacheManager multilevelCacheManager) {
         this.name = name;
         this.ttl = ttl;
         this.multilevelCacheManager = multilevelCacheManager;
@@ -74,7 +73,7 @@ public class MultilevelCache implements wang.liangchen.matrix.cache.sdk.cache.Ca
 
     @Override
     public <T> T get(Object key, Callable<T> valueLoader) {
-        boolean hits[] = {true, true};
+        boolean[] hits = {true, true};
         T value = localCache.get(key, () -> {
             hits[0] = false;
             logger.debug("LocalCache Miss,name: {},key: {}", this.name, key);
@@ -143,16 +142,16 @@ public class MultilevelCache implements wang.liangchen.matrix.cache.sdk.cache.Ca
 
     @Override
     public Set<Object> keys() {
-        if (localCache instanceof wang.liangchen.matrix.cache.sdk.cache.Cache) {
-            return ((wang.liangchen.matrix.cache.sdk.cache.Cache) localCache).keys();
+        if (localCache instanceof MatrixCache) {
+            return ((MatrixCache) localCache).keys();
         }
         return Collections.emptySet();
     }
 
     @Override
     public boolean containsKey(Object key) {
-        if (localCache instanceof wang.liangchen.matrix.cache.sdk.cache.Cache) {
-            return ((wang.liangchen.matrix.cache.sdk.cache.Cache) localCache).containsKey(key);
+        if (localCache instanceof MatrixCache) {
+            return ((MatrixCache) localCache).containsKey(key);
         }
         return false;
     }

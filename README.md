@@ -79,6 +79,7 @@ A transparent multilevel cache framework based on spring cache.
 
 ```java
 @EnableMatrixCaching
+public class ApplicatonConfiguration {}
 ```
 
 ## 注解式
@@ -90,14 +91,19 @@ A transparent multilevel cache framework based on spring cache.
 ```java
 import java.util.concurrent.TimeUnit;
 
-@Cacheable(value = "CacheObject")
-// 使用该注解为Cache指定过期时间
-@CacheExpire(ttl = 5, timeUnit = TimeUnit.SECONDS)
+public class ExampleClass{
+    @Cacheable(value = "CacheObject")
+    // 使用该注解为Cache指定过期时间
+    @CacheExpire(ttl = 5, timeUnit = TimeUnit.SECONDS)
+    public String exampleMethod(){}
+}
 ```
 
 ## 编程式
 
 ```java
-@Inject
-private MultilevelCacheManager cacheManager;
+public class ExampleClass {
+    @Inject
+    private MultilevelCacheManager matrixCacheManager;
+}
 ```

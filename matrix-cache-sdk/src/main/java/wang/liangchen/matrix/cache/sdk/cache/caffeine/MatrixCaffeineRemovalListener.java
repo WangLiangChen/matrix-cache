@@ -4,7 +4,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class MatrixRemovalListener implements RemovalListener<Object, Object> {
+public class MatrixCaffeineRemovalListener implements RemovalListener<Object, Object> {
     private RemovalListener<Object, Object> delegate;
 
     @Override

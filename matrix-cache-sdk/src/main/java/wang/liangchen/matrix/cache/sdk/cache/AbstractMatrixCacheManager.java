@@ -1,6 +1,7 @@
 package wang.liangchen.matrix.cache.sdk.cache;
 
 
+import org.springframework.cache.Cache;
 import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
 import org.springframework.lang.Nullable;
 
@@ -9,20 +10,20 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public abstract class AbstractCacheManager implements CacheManager {
-    private final ConcurrentMap<String, org.springframework.cache.Cache> cacheMap = new ConcurrentHashMap<>(32);
+public abstract class AbstractMatrixCacheManager implements MatrixCacheManager {
+    private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(32);
     private boolean allowNullValues = true;
     private boolean transactionAware = false;
 
     @Override
     @Nullable
-    public org.springframework.cache.Cache getCache(String name) {
+    public Cache getCache(String name) {
         return getCache(name, Duration.ZERO);
     }
 
     @Override
-    public org.springframework.cache.Cache getCache(String name, Duration ttl) {
-        org.springframework.cache.Cache cache = this.cacheMap.get(name);
+    public Cache getCache(String name, Duration ttl) {
+        Cache cache = this.cacheMap.get(name);
         if (cache != null) {
             return cache;
         }
@@ -35,17 +36,17 @@ public abstract class AbstractCacheManager implements CacheManager {
     }
 
     @Nullable
-    protected final org.springframework.cache.Cache lookupCache(String name) {
+    protected final Cache lookupCache(String name) {
         return this.cacheMap.get(name);
     }
 
 
-    protected org.springframework.cache.Cache decorateCache(org.springframework.cache.Cache cache) {
+    protected Cache decorateCache(Cache cache) {
         return transactionAware ? new TransactionAwareCacheDecorator(cache) : cache;
     }
 
     @Nullable
-    protected abstract org.springframework.cache.Cache getMissingCache(String name, Duration ttl);
+    protected abstract Cache getMissingCache(String name, Duration ttl);
 
     public boolean isAllowNullValues() {
         return allowNullValues;

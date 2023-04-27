@@ -5,6 +5,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.BasicOperation;
 import org.springframework.cache.interceptor.CacheOperationInvocationContext;
 import org.springframework.cache.interceptor.SimpleCacheResolver;
+import wang.liangchen.matrix.cache.sdk.cache.MatrixCacheManager;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ class MatrixCacheResolver extends SimpleCacheResolver {
     @Override
     public Collection<? extends Cache> resolveCaches(CacheOperationInvocationContext<?> context) {
         Duration ttl = null;
-        if(cacheManager instanceof  wang.liangchen.matrix.cache.sdk.cache.CacheManager){
+        if(cacheManager instanceof MatrixCacheManager){
             BasicOperation operation = context.getOperation();
             if (operation instanceof MatrixCacheableOperation) {
                 ttl = ((MatrixCacheableOperation) operation).getTtl();
@@ -40,7 +41,7 @@ class MatrixCacheResolver extends SimpleCacheResolver {
             if (null == ttl || Duration.ZERO == ttl) {
                 cache = cacheManager.getCache(cacheName);
             } else {
-                cache = ((wang.liangchen.matrix.cache.sdk.cache.CacheManager) cacheManager).getCache(cacheName, ttl);
+                cache = ((MatrixCacheManager) cacheManager).getCache(cacheName, ttl);
             }
             caches.add(cache);
         }

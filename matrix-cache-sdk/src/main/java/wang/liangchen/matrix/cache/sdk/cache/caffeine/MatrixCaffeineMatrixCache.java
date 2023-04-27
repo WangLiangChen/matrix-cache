@@ -1,5 +1,7 @@
 package wang.liangchen.matrix.cache.sdk.cache.caffeine;
 
+import wang.liangchen.matrix.cache.sdk.cache.MatrixCache;
+
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -8,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 /**
  * @author LiangChen.Wang
  */
-public class MatrixCaffeineCache extends org.springframework.cache.caffeine.CaffeineCache implements wang.liangchen.matrix.cache.sdk.cache.Cache {
+public class MatrixCaffeineMatrixCache extends org.springframework.cache.caffeine.CaffeineCache implements MatrixCache {
     /**
      * time to live - ttl
      * time to idle - tti
@@ -16,12 +18,12 @@ public class MatrixCaffeineCache extends org.springframework.cache.caffeine.Caff
     private final Duration ttl;
     private final Set<Object> keys = new CopyOnWriteArraySet<>();
 
-    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, Duration ttl, MatrixRemovalListener removalListener) {
-        this(name, cache, true, ttl, removalListener);
+    public MatrixCaffeineMatrixCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache, Duration ttl, MatrixCaffeineRemovalListener removalListener) {
+        this(name, nativeCache, true, ttl, removalListener);
     }
 
-    public MatrixCaffeineCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> cache, boolean allowNullValues, Duration ttl, MatrixRemovalListener removalListener) {
-        super(name, cache, allowNullValues);
+    public MatrixCaffeineMatrixCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache, boolean allowNullValues, Duration ttl, MatrixCaffeineRemovalListener removalListener) {
+        super(name, nativeCache, allowNullValues);
         this.ttl = ttl;
         removalListener.registerDelegate((key, value, cause) -> {
             this.keys.remove(key);

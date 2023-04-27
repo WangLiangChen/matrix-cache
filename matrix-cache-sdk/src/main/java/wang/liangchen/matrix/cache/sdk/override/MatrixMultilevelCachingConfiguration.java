@@ -17,7 +17,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import wang.liangchen.matrix.cache.sdk.annotation.OverrideBean;
-import wang.liangchen.matrix.cache.sdk.cache.mlc.MultilevelCacheManager;
+import wang.liangchen.matrix.cache.sdk.cache.mlc.MultilevelMatrixCacheManager;
 import wang.liangchen.matrix.cache.sdk.cache.redis.serializer.ProtostuffRedisSerializer;
 import wang.liangchen.matrix.cache.sdk.consistency.CacheSynchronizer;
 
@@ -35,11 +35,11 @@ class MatrixMultilevelCachingConfiguration {
     public CacheManager multilevelCacheManager(CacheProperties cacheProperties, ObjectProvider<CacheLoader<Object, Object>> caffeineCacheLoader, RedisTemplate<Object, Object> redisTemplate) {
         CacheManager localCacheManager = new MatrixLocalCachingConfiguration().matrixLocalCacheManager(cacheProperties, caffeineCacheLoader);
         CacheManager distributedCacheManager = new MatrixDistributedCachingConfiguration().matrixDistributedCacheManager(cacheProperties, redisTemplate);
-        return new MultilevelCacheManager(localCacheManager, distributedCacheManager, redisTemplate);
+        return new MultilevelMatrixCacheManager(localCacheManager, distributedCacheManager, redisTemplate);
     }
 
     @Bean
-    public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory redisConnectionFactory, MultilevelCacheManager multilevelCacheManager) {
+    public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory redisConnectionFactory, MultilevelMatrixCacheManager multilevelCacheManager) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(redisConnectionFactory);
         container.setTaskExecutor(Executors.newFixedThreadPool(16, new CustomizableThreadFactory("mx-listener-")));
