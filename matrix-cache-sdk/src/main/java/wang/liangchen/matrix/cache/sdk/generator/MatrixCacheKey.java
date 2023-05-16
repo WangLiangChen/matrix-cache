@@ -34,6 +34,6 @@ public class MatrixCacheKey implements Serializable {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " [" + StringUtils.arrayToCommaDelimitedString(this.params) + "]";
+        return StringUtils.arrayToCommaDelimitedString(this.params);
     }
 }

@@ -12,7 +12,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import wang.liangchen.matrix.cache.sdk.annotation.OverrideBean;
-import wang.liangchen.matrix.cache.sdk.cache.redis.MatrixRedisCacheManager;
+import wang.liangchen.matrix.cache.sdk.cache.redis.MatrixRedisMatrixCacheManager;
 import wang.liangchen.matrix.cache.sdk.cache.redis.serializer.ProtostuffRedisSerializer;
 
 /**
@@ -38,7 +38,7 @@ class MatrixDistributedCachingConfiguration {
         if (!redisProperties.isUseKeyPrefix()) {
             defaultRedisCacheConfig = defaultRedisCacheConfig.disableKeyPrefix();
         }
-        return new MatrixRedisCacheManager(defaultRedisCacheConfig, redisTemplate);
+        return new MatrixRedisMatrixCacheManager(defaultRedisCacheConfig, redisTemplate);
     }
 
     @Bean

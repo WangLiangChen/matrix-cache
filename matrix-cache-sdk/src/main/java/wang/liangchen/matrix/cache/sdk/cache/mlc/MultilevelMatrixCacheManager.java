@@ -6,6 +6,8 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.Nullable;
+import wang.liangchen.matrix.cache.sdk.cache.AbstractMatrixCacheManager;
+import wang.liangchen.matrix.cache.sdk.cache.MatrixCacheManager;
 import wang.liangchen.matrix.cache.sdk.consistency.CacheSynchronizer;
 
 import java.time.Duration;
@@ -14,13 +16,13 @@ import java.util.List;
 /**
  * @author LiangChen.Wang 2021/3/22
  */
-public class MultilevelCacheManager extends wang.liangchen.matrix.cache.sdk.cache.AbstractCacheManager {
-    private final static Logger logger = LoggerFactory.getLogger(MultilevelCacheManager.class);
+public class MultilevelMatrixCacheManager extends AbstractMatrixCacheManager {
+    private final static Logger logger = LoggerFactory.getLogger(MultilevelMatrixCacheManager.class);
     private final CacheManager localCacheManager, distributedCacheManager;
     private final RedisTemplate<Object, Object> redisTemplate;
 
-    public MultilevelCacheManager(CacheManager localCacheManager, CacheManager distributedCacheManager,
-                                  RedisTemplate<Object, Object> redisTemplate) {
+    public MultilevelMatrixCacheManager(CacheManager localCacheManager, CacheManager distributedCacheManager,
+                                        RedisTemplate<Object, Object> redisTemplate) {
         this.localCacheManager = localCacheManager;
         this.distributedCacheManager = distributedCacheManager;
         this.redisTemplate = redisTemplate;
@@ -30,12 +32,12 @@ public class MultilevelCacheManager extends wang.liangchen.matrix.cache.sdk.cach
     @Nullable
     @Override
     protected Cache getMissingCache(String name, Duration ttl) {
-        return new MultilevelCache(name, ttl, this);
+        return new MultilevelMatrixCache(name, ttl, this);
     }
 
     public Cache getLocalCache(String name, Duration ttl) {
-        if (localCacheManager instanceof wang.liangchen.matrix.cache.sdk.cache.CacheManager) {
-            return ((wang.liangchen.matrix.cache.sdk.cache.CacheManager) localCacheManager).getCache(name, ttl);
+        if (localCacheManager instanceof MatrixCacheManager) {
+            return ((MatrixCacheManager) localCacheManager).getCache(name, ttl);
         }
         return localCacheManager.getCache(name);
     }
@@ -44,8 +46,8 @@ public class MultilevelCacheManager extends wang.liangchen.matrix.cache.sdk.cach
         if (null == distributedCacheManager) {
             return null;
         }
-        if (distributedCacheManager instanceof wang.liangchen.matrix.cache.sdk.cache.CacheManager) {
-            return ((wang.liangchen.matrix.cache.sdk.cache.CacheManager) distributedCacheManager).getCache(name, ttl);
+        if (distributedCacheManager instanceof MatrixCacheManager) {
+            return ((MatrixCacheManager) distributedCacheManager).getCache(name, ttl);
         }
         return distributedCacheManager.getCache(name);
     }

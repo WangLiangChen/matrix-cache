@@ -12,7 +12,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 import wang.liangchen.matrix.cache.sdk.annotation.OverrideBean;
-import wang.liangchen.matrix.cache.sdk.cache.caffeine.MatrixCaffeineCacheManager;
+import wang.liangchen.matrix.cache.sdk.cache.caffeine.MatrixCaffeineMatrixCacheManager;
 
 /**
  * @author LiangChen.Wang 2020/9/23
@@ -25,7 +25,7 @@ class MatrixLocalCachingConfiguration {
     @OverrideBean("cacheManager")
     @Bean
     public CacheManager matrixLocalCacheManager(CacheProperties cacheProperties, ObjectProvider<CacheLoader<Object, Object>> caffeineCacheLoader) {
-        MatrixCaffeineCacheManager cacheManager = new MatrixCaffeineCacheManager();
+        MatrixCaffeineMatrixCacheManager cacheManager = new MatrixCaffeineMatrixCacheManager();
         caffeineCacheLoader.ifAvailable(cacheManager::setCacheLoader);
         String specification = cacheProperties.getCaffeine().getSpec();
         if (StringUtils.hasText(specification)) {

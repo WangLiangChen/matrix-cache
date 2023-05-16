@@ -5,13 +5,14 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
 import org.springframework.cache.Cache;
+import wang.liangchen.matrix.cache.sdk.cache.AbstractMatrixCacheManager;
 
 import java.time.Duration;
 
 /**
  * @author LiangChen.Wang 2021/4/15
  */
-public class MatrixCaffeineCacheManager extends wang.liangchen.matrix.cache.sdk.cache.AbstractCacheManager {
+public class MatrixCaffeineMatrixCacheManager extends AbstractMatrixCacheManager {
     private CacheLoader<Object, Object> cacheLoader;
     private CaffeineSpec caffeineSpec;
 
@@ -28,12 +29,12 @@ public class MatrixCaffeineCacheManager extends wang.liangchen.matrix.cache.sdk.
         return caffeineCache(name, ttl);
     }
 
-    private MatrixCaffeineCache caffeineCache(String name, Duration ttl) {
-        MatrixRemovalListener removalListener = new MatrixRemovalListener();
-        return new MatrixCaffeineCache(name, nativeCache(ttl, removalListener), isAllowNullValues(), ttl, removalListener);
+    private MatrixCaffeineMatrixCache caffeineCache(String name, Duration ttl) {
+        MatrixCaffeineRemovalListener removalListener = new MatrixCaffeineRemovalListener();
+        return new MatrixCaffeineMatrixCache(name, nativeCache(ttl, removalListener), isAllowNullValues(), ttl, removalListener);
     }
 
-    private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(Duration ttl, MatrixRemovalListener removalListener) {
+    private com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache(Duration ttl, MatrixCaffeineRemovalListener removalListener) {
         Caffeine<Object, Object> cacheBuilder = null == this.caffeineSpec ? Caffeine.newBuilder() : Caffeine.from(caffeineSpec);
         if (Duration.ZERO.compareTo(ttl) < 0) {
             cacheBuilder.expireAfterWrite(ttl);
