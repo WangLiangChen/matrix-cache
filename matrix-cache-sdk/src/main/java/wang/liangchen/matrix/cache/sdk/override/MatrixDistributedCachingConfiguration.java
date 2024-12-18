@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import wang.liangchen.matrix.cache.sdk.annotation.OverrideBean;
 import wang.liangchen.matrix.cache.sdk.cache.redis.MatrixRedisMatrixCacheManager;
 import wang.liangchen.matrix.cache.sdk.cache.redis.serializer.ProtostuffRedisSerializer;
 
@@ -24,7 +23,6 @@ import wang.liangchen.matrix.cache.sdk.cache.redis.serializer.ProtostuffRedisSer
 @EnableConfigurationProperties(CacheProperties.class)
 class MatrixDistributedCachingConfiguration {
 
-    @OverrideBean("cacheManager")
     @Bean
     public CacheManager matrixDistributedCacheManager(CacheProperties cacheProperties, RedisTemplate<Object, Object> redisTemplate) {
         CacheProperties.Redis redisProperties = cacheProperties.getRedis();

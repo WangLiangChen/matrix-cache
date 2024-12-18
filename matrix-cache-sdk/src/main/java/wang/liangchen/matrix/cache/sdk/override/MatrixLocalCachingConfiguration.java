@@ -11,7 +11,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
-import wang.liangchen.matrix.cache.sdk.annotation.OverrideBean;
 import wang.liangchen.matrix.cache.sdk.cache.caffeine.MatrixCaffeineMatrixCacheManager;
 
 /**
@@ -22,7 +21,6 @@ import wang.liangchen.matrix.cache.sdk.cache.caffeine.MatrixCaffeineMatrixCacheM
 @EnableConfigurationProperties(CacheProperties.class)
 class MatrixLocalCachingConfiguration {
 
-    @OverrideBean("cacheManager")
     @Bean
     public CacheManager matrixLocalCacheManager(CacheProperties cacheProperties, ObjectProvider<CacheLoader<Object, Object>> caffeineCacheLoader) {
         MatrixCaffeineMatrixCacheManager cacheManager = new MatrixCaffeineMatrixCacheManager();

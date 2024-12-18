@@ -16,7 +16,6 @@ import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-import wang.liangchen.matrix.cache.sdk.annotation.OverrideBean;
 import wang.liangchen.matrix.cache.sdk.cache.mlc.MultilevelMatrixCacheManager;
 import wang.liangchen.matrix.cache.sdk.cache.redis.serializer.ProtostuffRedisSerializer;
 import wang.liangchen.matrix.cache.sdk.consistency.CacheSynchronizer;
@@ -30,7 +29,6 @@ import java.util.concurrent.Executors;
 @ConditionalOnClass({Caffeine.class, RedisTemplate.class})
 @EnableConfigurationProperties(CacheProperties.class)
 class MatrixMultilevelCachingConfiguration {
-    @OverrideBean("cacheManager")
     @Bean
     public CacheManager multilevelCacheManager(CacheProperties cacheProperties, ObjectProvider<CacheLoader<Object, Object>> caffeineCacheLoader, RedisTemplate<Object, Object> redisTemplate) {
         CacheManager localCacheManager = new MatrixLocalCachingConfiguration().matrixLocalCacheManager(cacheProperties, caffeineCacheLoader);
