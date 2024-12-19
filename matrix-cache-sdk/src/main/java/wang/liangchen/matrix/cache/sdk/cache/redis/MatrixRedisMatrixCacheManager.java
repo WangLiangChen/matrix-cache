@@ -36,4 +36,7 @@ public class MatrixRedisMatrixCacheManager extends AbstractMatrixCacheManager {
         return new MatrixRedisMatrixCache(name, cacheWriter, localConfig, redisTemplate);
     }
 
+    public RedisTemplate<Object, Object> getRedisTemplate() {
+        return redisTemplate;
+    }
 }

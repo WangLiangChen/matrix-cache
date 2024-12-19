@@ -14,7 +14,7 @@ import java.util.Collection;
 /**
  * @author Liangchen.Wang 2022-07-04 13:43
  */
-class MatrixCacheResolver extends SimpleCacheResolver {
+public class MatrixCacheResolver extends SimpleCacheResolver {
     private final CacheManager cacheManager;
 
     public MatrixCacheResolver(CacheManager cacheManager) {

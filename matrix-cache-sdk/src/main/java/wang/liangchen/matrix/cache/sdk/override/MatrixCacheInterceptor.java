@@ -21,7 +21,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-class MatrixCacheInterceptor extends org.springframework.cache.interceptor.CacheInterceptor {
+public class MatrixCacheInterceptor extends org.springframework.cache.interceptor.CacheInterceptor {
     private boolean initialized = false;
     private static final Object NO_RESULT = new Object();
     private static final Object RESULT_UNAVAILABLE = new Object();

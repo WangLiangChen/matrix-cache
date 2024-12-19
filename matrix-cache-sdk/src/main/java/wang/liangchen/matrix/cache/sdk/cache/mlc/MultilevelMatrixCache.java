@@ -137,7 +137,10 @@ public class MultilevelMatrixCache implements MatrixCache {
     @Override
     public boolean invalidate() {
         distributedCache.invalidate();
-        return localCache.invalidate();
+        logger.debug("invalidate DistributedCache,name: {}", this.name);
+        boolean invalidate = localCache.invalidate();
+        logger.debug("invalidate LocalCache,name: {}", this.name);
+        return invalidate;
     }
 
     @Override

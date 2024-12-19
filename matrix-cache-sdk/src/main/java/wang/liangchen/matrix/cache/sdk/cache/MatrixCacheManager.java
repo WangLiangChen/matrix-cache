@@ -13,7 +13,4 @@ import java.time.Duration;
 public interface MatrixCacheManager extends CacheManager {
     @Nullable
     Cache getCache(String name, Duration ttl);
-
-    @Nullable
-    Cache getCache(String name);
 }

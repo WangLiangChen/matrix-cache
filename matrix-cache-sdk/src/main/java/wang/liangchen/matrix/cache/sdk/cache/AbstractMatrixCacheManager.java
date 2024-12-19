@@ -30,10 +30,8 @@ public abstract class AbstractMatrixCacheManager implements MatrixCacheManager {
         return this.cacheMap.computeIfAbsent(name, cacheName -> decorateCache(getMissingCache(name, ttl)));
     }
 
-    @Override
-    public Collection<String> getCacheNames() {
-        return this.cacheMap.keySet();
-    }
+    @Nullable
+    protected abstract Cache getMissingCache(String name, Duration ttl);
 
     @Nullable
     protected final Cache lookupCache(String name) {
@@ -45,8 +43,10 @@ public abstract class AbstractMatrixCacheManager implements MatrixCacheManager {
         return transactionAware ? new TransactionAwareCacheDecorator(cache) : cache;
     }
 
-    @Nullable
-    protected abstract Cache getMissingCache(String name, Duration ttl);
+    @Override
+    public Collection<String> getCacheNames() {
+        return this.cacheMap.keySet();
+    }
 
     public boolean isAllowNullValues() {
         return allowNullValues;

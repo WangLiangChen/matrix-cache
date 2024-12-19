@@ -17,9 +17,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Liangchen.Wang 2022-07-21 14:49
  */
-public enum CacheSynchronizer {
+public enum RedisSynchronizer {
     INSTANCE;
-    private final Logger logger = LoggerFactory.getLogger(CacheSynchronizer.class);
+    private final Logger logger = LoggerFactory.getLogger(RedisSynchronizer.class);
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2, new CustomizableThreadFactory("mx-sync-"));
     private final DateTimeFormatter EVICT_QUEUE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -103,9 +103,9 @@ public enum CacheSynchronizer {
                 multilevelCacheManager.handleEvictedKeys(messages);
                 atomicOffset.getAndSet(size);
             }
-            // 延时拉取20S后,停止timer
+            // 延时拉取30S后,停止timer
             LocalDateTime zero = LocalDate.parse(previousEvictQueueKey, EVICT_QUEUE_KEY_FORMATTER).atStartOfDay();
-            zero = zero.plusDays(1).plusSeconds(20);
+            zero = zero.plusDays(1).plusSeconds(30);
             if (LocalDateTime.now().isAfter(zero)) {
                 logger.debug("delete previousEvictQueue, key:{}, offset:{}, size:{}", previousEvictQueueKey, previousOffset, size);
                 this.redisTemplate.delete(previousEvictQueueKey);

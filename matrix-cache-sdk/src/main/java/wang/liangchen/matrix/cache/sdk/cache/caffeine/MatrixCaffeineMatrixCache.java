@@ -18,10 +18,6 @@ public class MatrixCaffeineMatrixCache extends org.springframework.cache.caffein
     private final Duration ttl;
     private final Set<Object> keys = new CopyOnWriteArraySet<>();
 
-    public MatrixCaffeineMatrixCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache, Duration ttl, MatrixCaffeineRemovalListener removalListener) {
-        this(name, nativeCache, true, ttl, removalListener);
-    }
-
     public MatrixCaffeineMatrixCache(String name, com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache, boolean allowNullValues, Duration ttl, MatrixCaffeineRemovalListener removalListener) {
         super(name, nativeCache, allowNullValues);
         this.ttl = ttl;
@@ -32,10 +28,12 @@ public class MatrixCaffeineMatrixCache extends org.springframework.cache.caffein
 
     @Override
     public <T> T get(Object key, Callable<T> valueLoader) {
-        T value = super.get(key, valueLoader);
-        // 此时为同步调用，返回后会设置缓存，所以这里需要添加key
-        this.keys.add(key);
-        return value;
+        return super.get(key, () -> {
+            T call = valueLoader.call();
+            // 此时为同步调用，返回后会设置缓存，所以这里需要添加key
+            this.keys.add(key);
+            return call;
+        });
     }
 
     @Override

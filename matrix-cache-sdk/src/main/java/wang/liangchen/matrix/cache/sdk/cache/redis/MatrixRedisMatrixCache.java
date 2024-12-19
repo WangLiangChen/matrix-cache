@@ -5,7 +5,7 @@ import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import wang.liangchen.matrix.cache.sdk.cache.MatrixCache;
-import wang.liangchen.matrix.cache.sdk.consistency.CacheSynchronizer;
+import wang.liangchen.matrix.cache.sdk.consistency.RedisSynchronizer;
 
 import java.time.Duration;
 import java.util.Set;
@@ -31,10 +31,12 @@ public class MatrixRedisMatrixCache extends org.springframework.data.redis.cache
 
     @Override
     public <T> T get(Object key, Callable<T> valueLoader) {
-        T value = super.get(key, valueLoader);
-        // 此时为同步调用，返回后会设置缓存，所以这里需要添加key
-        this.keys.add(key);
-        return value;
+        return super.get(key, () -> {
+            T call = valueLoader.call();
+            // 此时为同步调用，返回后会设置缓存，所以这里需要添加key
+            this.keys.add(key);
+            return call;
+        });
     }
 
     @Override
@@ -48,13 +50,13 @@ public class MatrixRedisMatrixCache extends org.springframework.data.redis.cache
         super.evict(key);
         keys.remove(key);
         // add to evict queue
-        CacheSynchronizer.INSTANCE.sendEvictMessage(this.getName(), key.toString());
+        RedisSynchronizer.INSTANCE.sendEvictMessage(this.getName(), String.valueOf(key));
     }
 
     @Override
     public void clear() {
         super.clear();
-        CacheSynchronizer.INSTANCE.sendEvictMessage(this.getName());
+        RedisSynchronizer.INSTANCE.sendEvictMessage(this.getName());
     }
 
     @Override

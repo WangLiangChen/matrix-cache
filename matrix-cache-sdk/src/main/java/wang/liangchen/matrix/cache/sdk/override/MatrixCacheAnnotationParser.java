@@ -19,11 +19,11 @@ import java.util.*;
 /**
  * @author LiangChen.Wang 2021/3/18
  */
-class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable {
+public class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
     private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<Class<? extends Annotation>>() {{
-        add(Cacheable.class);
         add(CacheExpire.class);
+        add(Cacheable.class);
         add(CacheEvict.class);
         add(CachePut.class);
         add(Caching.class);
@@ -88,12 +88,12 @@ class MatrixCacheAnnotationParser implements CacheAnnotationParser, Serializable
                 operations.add(parsePutAnnotation(annotatedElement, cachingConfig, (CachePut) annotation, cacheExpire));
                 continue;
             }
-            if (annotation instanceof CacheEvict) {
-                operations.add(parseEvictAnnotation(annotatedElement, cachingConfig, (CacheEvict) annotation));
-                continue;
-            }
             if (annotation instanceof Caching) {
                 parseCachingAnnotation(annotatedElement, cachingConfig, (Caching) annotation, operations, cacheExpire);
+                continue;
+            }
+            if (annotation instanceof CacheEvict) {
+                operations.add(parseEvictAnnotation(annotatedElement, cachingConfig, (CacheEvict) annotation));
             }
         }
         return operations;
