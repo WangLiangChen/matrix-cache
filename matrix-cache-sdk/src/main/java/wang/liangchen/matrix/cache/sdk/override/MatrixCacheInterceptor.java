@@ -14,6 +14,7 @@ import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.*;
 
@@ -25,7 +26,7 @@ public class MatrixCacheInterceptor extends org.springframework.cache.intercepto
     private boolean initialized = false;
     private static final Object NO_RESULT = new Object();
     private static final Object RESULT_UNAVAILABLE = new Object();
-    private final CacheOperationExpressionEvaluator evaluator = new CacheOperationExpressionEvaluator();
+    //private final CacheOperationExpressionEvaluator evaluator = new CacheOperationExpressionEvaluator();
     private final Map<CacheOperationCacheKey, CacheOperationMetadata> metadataCache = new ConcurrentHashMap<>(1024);
 
     @Override
@@ -35,7 +36,7 @@ public class MatrixCacheInterceptor extends org.springframework.cache.intercepto
     }
 
     @Override
-    protected Object execute(CacheOperationInvoker invoker, Object target, Method method, Object[] args) {
+    protected Object execute(@NonNull CacheOperationInvoker invoker, @NonNull Object target, @NonNull Method method, @NonNull Object[] args) {
         // Check whether aspect is enabled (to cope with cases where the AJ is pulled in automatically)
         if (!this.initialized) {
             return invoker.invoke();

@@ -36,8 +36,7 @@ public class MatrixCachingConfiguration {
     @Primary
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public MatrixCacheInterceptor cacheInterceptorOverride(CacheOperationSource cacheOperationSource,
-                                                           CacheManager cacheManager) {
+    public MatrixCacheInterceptor cacheInterceptorOverride(CacheOperationSource cacheOperationSource, CacheManager cacheManager) {
         MatrixCacheInterceptor matrixCacheInterceptor = new MatrixCacheInterceptor();
         matrixCacheInterceptor.setCacheOperationSource(cacheOperationSource);
         matrixCacheInterceptor.setKeyGenerator(new MatrixKeyGenerator());

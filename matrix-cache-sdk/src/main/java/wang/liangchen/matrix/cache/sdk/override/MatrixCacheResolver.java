@@ -13,6 +13,7 @@ import java.util.Collection;
 
 /**
  * @author Liangchen.Wang 2022-07-04 13:43
+ * find cache names from the contex, and find cache from the cachemanager
  */
 public class MatrixCacheResolver extends SimpleCacheResolver {
     private final CacheManager cacheManager;
@@ -25,7 +26,7 @@ public class MatrixCacheResolver extends SimpleCacheResolver {
     @Override
     public Collection<? extends Cache> resolveCaches(CacheOperationInvocationContext<?> context) {
         Duration ttl = null;
-        if(cacheManager instanceof MatrixCacheManager){
+        if (cacheManager instanceof MatrixCacheManager) {
             BasicOperation operation = context.getOperation();
             if (operation instanceof MatrixCacheableOperation) {
                 ttl = ((MatrixCacheableOperation) operation).getTtl();
@@ -36,8 +37,8 @@ public class MatrixCacheResolver extends SimpleCacheResolver {
 
         Collection<String> cacheNames = getCacheNames(context);
         Collection<Cache> caches = new ArrayList<>(cacheNames.size());
+        Cache cache;
         for (String cacheName : cacheNames) {
-            Cache cache;
             if (null == ttl || Duration.ZERO == ttl) {
                 cache = cacheManager.getCache(cacheName);
             } else {

@@ -1,11 +1,13 @@
 package wang.liangchen.matrix.cache.sdk.override;
 
+import org.springframework.lang.NonNull;
+
 import java.time.Duration;
 
 /**
  * @author LiangChen.Wang 2021/3/19
  */
-class MatrixCacheableOperation extends org.springframework.cache.interceptor.CacheableOperation {
+public class MatrixCacheableOperation extends org.springframework.cache.interceptor.CacheableOperation {
 
     private final Duration ttl;
 
@@ -26,6 +28,7 @@ class MatrixCacheableOperation extends org.springframework.cache.interceptor.Cac
         }
 
         @Override
+        @NonNull
         protected StringBuilder getOperationDescription() {
             StringBuilder sb = super.getOperationDescription();
             sb.append(" | ttl='");
@@ -35,6 +38,7 @@ class MatrixCacheableOperation extends org.springframework.cache.interceptor.Cac
         }
 
         @Override
+        @NonNull
         public MatrixCacheableOperation build() {
             return new MatrixCacheableOperation(this);
         }
