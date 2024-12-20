@@ -56,6 +56,7 @@ public class MatrixRedisMatrixCache extends org.springframework.data.redis.cache
     @Override
     public void clear() {
         super.clear();
+        keys.expire(Duration.ZERO);
         RedisSynchronizer.INSTANCE.sendEvictMessage(this.getName());
     }
 

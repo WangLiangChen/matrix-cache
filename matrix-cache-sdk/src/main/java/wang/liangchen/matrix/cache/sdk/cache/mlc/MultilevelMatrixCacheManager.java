@@ -3,6 +3,7 @@ package wang.liangchen.matrix.cache.sdk.cache.mlc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.Nullable;
 import wang.liangchen.matrix.cache.sdk.cache.AbstractMatrixCacheManager;
@@ -20,17 +21,9 @@ import java.util.Optional;
  */
 public class MultilevelMatrixCacheManager extends AbstractMatrixCacheManager {
     private final static Logger logger = LoggerFactory.getLogger(MultilevelMatrixCacheManager.class);
-    private final MatrixCaffeineMatrixCacheManager localCacheManager;
-    private final MatrixRedisMatrixCacheManager distributedCacheManager;
-    private final RedisTemplate<Object, Object> redisTemplate;
-
-
-    public MultilevelMatrixCacheManager(MatrixCaffeineMatrixCacheManager localCacheManager, MatrixRedisMatrixCacheManager distributedCacheManager) {
-        this.localCacheManager = localCacheManager;
-        this.distributedCacheManager = distributedCacheManager;
-        this.redisTemplate = this.distributedCacheManager.getRedisTemplate();
-        RedisSynchronizer.INSTANCE.init(this);
-    }
+    private CacheManager localCacheManager;
+    private CacheManager distributedCacheManager;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Nullable
     @Override
@@ -56,6 +49,16 @@ public class MultilevelMatrixCacheManager extends AbstractMatrixCacheManager {
             return ((MatrixCacheManager) distributedCacheManager).getCache(name, ttl);
         }
         return distributedCacheManager.getCache(name);
+    }
+
+    public void setLocalCacheManager(MatrixCaffeineMatrixCacheManager localCacheManager) {
+        this.localCacheManager = localCacheManager;
+    }
+
+    public void setDistributedCacheManager(MatrixRedisMatrixCacheManager distributedCacheManager) {
+        this.distributedCacheManager = distributedCacheManager;
+        this.redisTemplate = distributedCacheManager.getRedisTemplate();
+        RedisSynchronizer.INSTANCE.init(this);
     }
 
     public RedisTemplate<Object, Object> getRedisTemplate() {
