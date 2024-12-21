@@ -25,7 +25,7 @@ A transparent multilevel cache framework based on spring cache.
 <dependency>
     <groupId>wang.liangchen.matrix.cache</groupId>
     <artifactId>matrix-cache-sdk-spring-boot-starter</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
 </dependency>
 ```
 ## 其它可选依赖
