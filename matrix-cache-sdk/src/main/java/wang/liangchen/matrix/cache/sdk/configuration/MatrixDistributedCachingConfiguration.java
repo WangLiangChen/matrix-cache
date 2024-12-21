@@ -1,5 +1,6 @@
 package wang.liangchen.matrix.cache.sdk.configuration;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +16,8 @@ import wang.liangchen.matrix.cache.sdk.cache.redis.serializer.ProtostuffRedisSer
 public class MatrixDistributedCachingConfiguration {
     @Bean
     @Primary
-    public CacheManager cacheManager(CacheProperties cacheProperties,
-                                     RedisConnectionFactory redisConnectionFactory) {
+    public CacheManager distributedCacheManager(CacheProperties cacheProperties,
+                                                ObjectProvider<RedisConnectionFactory> redisConnectionFactoryProvider) {
         CacheProperties.Redis redisProperties = cacheProperties.getRedis();
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig();
         if (redisProperties.getKeyPrefix() != null) {
@@ -35,7 +36,7 @@ public class MatrixDistributedCachingConfiguration {
         RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new ProtostuffRedisSerializer<>());
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        redisConnectionFactoryProvider.ifAvailable(redisTemplate::setConnectionFactory);
         redisTemplate.afterPropertiesSet();
         return new MatrixRedisMatrixCacheManager(defaultCacheConfig, redisTemplate);
     }

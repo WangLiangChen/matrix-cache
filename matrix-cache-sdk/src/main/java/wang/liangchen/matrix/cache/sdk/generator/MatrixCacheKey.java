@@ -15,7 +15,7 @@ public class MatrixCacheKey implements Serializable {
 
     public MatrixCacheKey(Object target, Method method, Object... elements) {
         this.params = new Object[elements.length + 2];
-        this.params[0] = target.getClass().getName();
+        this.params[0] = target.getClass().getSimpleName();
         this.params[1] = method.getName();
         System.arraycopy(elements, 0, this.params, 2, elements.length);
         this.hashCode = Arrays.deepHashCode(this.params);

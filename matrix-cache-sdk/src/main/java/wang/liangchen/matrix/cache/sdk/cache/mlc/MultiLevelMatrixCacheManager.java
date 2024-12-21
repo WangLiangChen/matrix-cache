@@ -19,8 +19,8 @@ import java.util.Optional;
 /**
  * @author LiangChen.Wang 2021/3/22
  */
-public class MultilevelMatrixCacheManager extends AbstractMatrixCacheManager {
-    private final static Logger logger = LoggerFactory.getLogger(MultilevelMatrixCacheManager.class);
+public class MultiLevelMatrixCacheManager extends AbstractMatrixCacheManager {
+    private final static Logger logger = LoggerFactory.getLogger(MultiLevelMatrixCacheManager.class);
     private CacheManager localCacheManager;
     private CacheManager distributedCacheManager;
     private RedisTemplate<Object, Object> redisTemplate;
@@ -28,7 +28,7 @@ public class MultilevelMatrixCacheManager extends AbstractMatrixCacheManager {
     @Nullable
     @Override
     protected Cache getMissingCache(String name, Duration ttl) {
-        return new MultilevelMatrixCache(name, ttl, this);
+        return new MultiLevelMatrixCache(name, ttl, this);
     }
 
     public Cache getLocalCache(String name, Duration ttl) {
@@ -80,9 +80,9 @@ public class MultilevelMatrixCacheManager extends AbstractMatrixCacheManager {
             String name = message.substring(0, index);
             Cache cache = localCacheManager.getCache(name);
             Optional.ofNullable(cache).ifPresent(e -> {
-                String key = message.substring(index + 1);
+                String key = message.substring(index + RedisSynchronizer.EVICT_MESSAGE_SPLITTER.length());
                 cache.evict(key);
-                logger.debug("Evicted cache: {},key: {}", message, key);
+                logger.debug("Evicted cache: {},key: {}", name, key);
             });
         });
     }

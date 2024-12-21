@@ -11,7 +11,7 @@ import wang.liangchen.matrix.cache.sdk.cache.caffeine.MatrixCaffeineMatrixCacheM
 public class MatrixLocalCachingConfiguration {
     @Bean
     @Primary
-    public CacheManager cacheManager(CacheProperties cacheProperties,
+    public CacheManager localCacheManager(CacheProperties cacheProperties,
                                      ObjectProvider<CacheLoader<Object, Object>> caffeineCacheLoaderProvider) {
         MatrixCaffeineMatrixCacheManager cacheManager = new MatrixCaffeineMatrixCacheManager();
         caffeineCacheLoaderProvider.ifAvailable(cacheManager::setCacheLoader);

@@ -14,15 +14,15 @@ import java.util.concurrent.Callable;
 /**
  * @author LiangChen.Wang 2021/3/22
  */
-public class MultilevelMatrixCache implements MatrixCache {
-    private final Logger logger = LoggerFactory.getLogger(MultilevelMatrixCache.class);
+public class MultiLevelMatrixCache implements MatrixCache {
+    private final Logger logger = LoggerFactory.getLogger(MultiLevelMatrixCache.class);
     private final String name;
     private final Duration ttl;
     private final Cache localCache;
     private final Cache distributedCache;
-    private final MultilevelMatrixCacheManager multilevelCacheManager;
+    private final MultiLevelMatrixCacheManager multilevelCacheManager;
 
-    public MultilevelMatrixCache(String name, Duration ttl, MultilevelMatrixCacheManager multilevelCacheManager) {
+    public MultiLevelMatrixCache(String name, Duration ttl, MultiLevelMatrixCacheManager multilevelCacheManager) {
         this.name = name;
         this.ttl = ttl;
         this.multilevelCacheManager = multilevelCacheManager;

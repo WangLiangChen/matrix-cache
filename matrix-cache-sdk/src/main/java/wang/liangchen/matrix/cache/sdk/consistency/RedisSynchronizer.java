@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.BoundListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-import wang.liangchen.matrix.cache.sdk.cache.mlc.MultilevelMatrixCacheManager;
+import wang.liangchen.matrix.cache.sdk.cache.mlc.MultiLevelMatrixCacheManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,10 +20,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public enum RedisSynchronizer {
     INSTANCE;
     private final Logger logger = LoggerFactory.getLogger(RedisSynchronizer.class);
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2, new CustomizableThreadFactory("mx-sync-"));
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2, new CustomizableThreadFactory("mx-redis-sync-"));
     private final DateTimeFormatter EVICT_QUEUE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    private MultilevelMatrixCacheManager multilevelCacheManager;
+    private MultiLevelMatrixCacheManager multilevelCacheManager;
     private RedisTemplate<Object, Object> redisTemplate;
 
     public static final String EVICT_MESSAGE_TOPIC = "MatrixCacheEvictMessage";
@@ -35,7 +35,7 @@ public enum RedisSynchronizer {
     private BoundListOperations<Object, Object> evictQueue;
 
 
-    public void init(MultilevelMatrixCacheManager multilevelCacheManager) {
+    public void init(MultiLevelMatrixCacheManager multilevelCacheManager) {
         this.multilevelCacheManager = multilevelCacheManager;
         this.redisTemplate = multilevelCacheManager.getRedisTemplate();
         if (null == this.redisTemplate) {
@@ -131,7 +131,7 @@ public enum RedisSynchronizer {
     }
 
     public void handleMessage() {
-        logger.debug("Receive Pub/Sub message");
+        logger.debug("Receive Pub/Sub message. Start to pull evictQueue.");
         pullEvictQueue();
     }
 

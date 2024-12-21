@@ -13,7 +13,7 @@ import java.lang.annotation.*;
 @Import(EnableMatrixCaching.MatrixCachingConfigurationSelector.class)
 public @interface EnableMatrixCaching {
 
-    class MatrixCachingConfigurationSelector implements ImportSelector{
+    class MatrixCachingConfigurationSelector implements ImportSelector {
         @Override
         public String[] selectImports(AnnotationMetadata importingClassMetadata) {
             ClassLoader classLoader = this.getClass().getClassLoader();
@@ -21,13 +21,13 @@ public @interface EnableMatrixCaching {
             boolean hasRedis = ClassUtils.isPresent("org.springframework.data.redis.core.RedisTemplate", classLoader);
 
             if (hasCaffeine && !hasRedis) {
-                return new String[]{MatrixLocalCachingConfiguration.class.getName()};
+                return new String[]{MatrixCachingConfiguration.class.getName(), MatrixLocalCachingConfiguration.class.getName()};
             }
             if (hasRedis && !hasCaffeine) {
-                return new String[]{MatrixDistributedCachingConfiguration.class.getName()};
+                return new String[]{MatrixCachingConfiguration.class.getName(), MatrixDistributedCachingConfiguration.class.getName()};
             }
             if (hasCaffeine && hasRedis) {
-                return new String[]{MatrixMultiLevelCachingConfiguration.class.getName()};
+                return new String[]{MatrixCachingConfiguration.class.getName(), MatrixMultiLevelCachingConfiguration.class.getName()};
             }
             return new String[0];
         }
