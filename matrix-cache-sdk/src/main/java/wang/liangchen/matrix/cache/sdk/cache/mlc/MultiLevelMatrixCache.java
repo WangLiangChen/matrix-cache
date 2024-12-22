@@ -76,18 +76,18 @@ public class MultiLevelMatrixCache implements MatrixCache {
         boolean[] hits = {true, true};
         T value = localCache.get(key, () -> {
             hits[0] = false;
-            logger.debug("LocalCache Miss,name: {},key: {}", this.name, key);
+            logger.debug("LocalCache Miss,Call valueLoader,name: {},key: {}", this.name, key);
             return distributedCache.get(key, () -> {
                 hits[1] = false;
-                logger.debug("DistributedCache Miss,name: {},key: {}", this.name, key);
+                logger.debug("DistributedCache Miss,Call valueLoader,name: {},key: {}", this.name, key);
                 return valueLoader.call();
             });
         });
         if (hits[0]) {
-            logger.debug("LocalCache Hit,name: {},key: {}", this.name, key);
+            logger.debug("LocalCache Hit by valueLoader,name: {},key: {}", this.name, key);
         }
         if (!hits[0] && hits[1]) {
-            logger.debug("DistributedCache Hit,name: {},key: {}", this.name, key);
+            logger.debug("DistributedCache Hit by valueLoader,name: {},key: {}", this.name, key);
         }
         return value;
     }
