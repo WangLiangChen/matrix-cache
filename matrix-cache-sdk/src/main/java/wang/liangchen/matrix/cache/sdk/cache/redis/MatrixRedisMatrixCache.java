@@ -21,16 +21,12 @@ import java.util.concurrent.Callable;
 public class MatrixRedisMatrixCache extends org.springframework.data.redis.cache.RedisCache implements MatrixCache {
     private static final Logger logger = LoggerFactory.getLogger(MatrixRedisMatrixCache.class);
     private final Duration ttl;
-    private final RedisTemplate<Object, Object> redisTemplate;
     private final BoundSetOperations<Object, Object> keys;
 
 
     public MatrixRedisMatrixCache(String name, RedisCacheWriter cacheWriter, RedisCacheConfiguration cacheConfig, RedisTemplate<Object, Object> redisTemplate) {
         super(name, cacheWriter, cacheConfig);
         this.ttl = cacheConfig.getTtlFunction().getTimeToLive(Object.class, null);
-        this.redisTemplate = redisTemplate;
-
-        cacheWriter.get
 
         String keysKey = this.createCacheKey("keys");
         this.keys = redisTemplate.boundSetOps(keysKey);
@@ -38,13 +34,12 @@ public class MatrixRedisMatrixCache extends org.springframework.data.redis.cache
 
     @Override
     public <T> T get(Object key, Callable<T> valueLoader) {
-        T object = super.get(key, () -> {
+        return super.get(key, () -> {
             T call = valueLoader.call();
             // 此时为同步调用，返回后会设置缓存，所以这里需要添加key
             this.keys.add(key);
             return call;
         });
-        return object;
     }
 
     @Override
@@ -75,7 +70,7 @@ public class MatrixRedisMatrixCache extends org.springframework.data.redis.cache
 
     @Override
     public boolean containsKey(Object key) {
-        return keys.isMember(key);
+        return Boolean.TRUE.equals(keys.isMember(key));
     }
 
     @Override
