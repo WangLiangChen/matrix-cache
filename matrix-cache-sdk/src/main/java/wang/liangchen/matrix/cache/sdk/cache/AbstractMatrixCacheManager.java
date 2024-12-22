@@ -1,6 +1,8 @@
 package wang.liangchen.matrix.cache.sdk.cache;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
 import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
 import org.springframework.lang.Nullable;
@@ -11,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public abstract class AbstractMatrixCacheManager implements MatrixCacheManager {
+    private static final Logger logger =  LoggerFactory.getLogger(AbstractMatrixCacheManager.class);
     private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(32);
     private boolean allowNullValues = true;
     private boolean transactionAware = false;

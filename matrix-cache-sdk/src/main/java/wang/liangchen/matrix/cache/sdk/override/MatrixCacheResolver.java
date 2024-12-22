@@ -13,7 +13,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Liangchen.Wang 2022-07-04 13:43
@@ -44,11 +43,6 @@ public class MatrixCacheResolver extends SimpleCacheResolver {
             ttl = ((MatrixCacheableOperation) operation).getTtl();
         } else if (operation instanceof MatrixCachePutOperation) {
             ttl = ((MatrixCachePutOperation) operation).getTtl();
-        }
-        // if random
-        if ((null == ttl || Duration.ZERO == ttl) && Boolean.parseBoolean(System.getProperty("matrix.cache.ttl.random", "false"))) {
-            ttl = Duration.ofMinutes(ThreadLocalRandom.current().nextInt(10, 120));
-            logger.debug("The ttl use random: {} minutes", ttl);
         }
         Cache cache;
         for (String cacheName : cacheNames) {
