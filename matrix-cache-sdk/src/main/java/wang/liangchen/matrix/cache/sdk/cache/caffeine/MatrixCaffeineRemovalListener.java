@@ -2,7 +2,7 @@ package wang.liangchen.matrix.cache.sdk.cache.caffeine;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import jakarta.annotation.Nullable;
 
 class MatrixCaffeineRemovalListener implements RemovalListener<Object, Object> {
     private RemovalListener<Object, Object> delegate;
