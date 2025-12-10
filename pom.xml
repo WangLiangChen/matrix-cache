@@ -48,7 +48,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <version.spring.boot>3.5.7</version.spring.boot>
+        <version.spring.boot>3.5.8</version.spring.boot>
     </properties>
     <dependencyManagement>
         <dependencies>
